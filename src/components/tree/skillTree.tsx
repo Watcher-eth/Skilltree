@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { nanoid } from "nanoid";
-import type { CanvasEdge, CanvasNode, Skill, SkillCategory } from "./types";
+import type { CanvasEdge, CanvasNode, Skill } from "./types";
 import { LeftMenu } from "./menu";
 import { Canvas } from "./Canvas";
 import { TopBar } from "@/components/layout/top";
@@ -19,13 +19,8 @@ type Snapshot = {
 function edgeId() {
   return `e-${nanoid(8)}`;
 }
-
-function hubId(group: string, cat: string) {
-    return `hub-${group.toLowerCase().replaceAll("&", "and").replaceAll(" ", "-")}__${cat
-      .toLowerCase()
-      .replaceAll("&", "and")
-      .replaceAll("/", "-")
-      .replaceAll(" ", "-")}`;
+function hubId(group: SkillGroup) {
+    return `hub-${group.toLowerCase().replaceAll(" ", "-")}`;
   }
   
   function wedgeKey(group: string, cat: string) {
@@ -136,58 +131,43 @@ function keyEdge(from: string, to: string) {
  * - no dangling edges (missing nodes) remain
  */
 function reconcileEdges(allNodes: CanvasNode[], currentEdges: CanvasEdge[]) {
-  const nodeIds = new Set(allNodes.map((n) => n.id));
-
-  // Keep only edges that still point to existing nodes
-  const base = currentEdges.filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to));
-
-  const seen = new Set<string>();
-  const out: CanvasEdge[] = [];
-
-  // de-dupe existing
-  for (const e of base) {
-    const k = keyEdge(e.from, e.to);
-    if (seen.has(k)) continue;
-    seen.add(k);
-    out.push(e);
-  }
-
-  const userId = "user-root";
-
-  // For each category hub, ensure user->hub and hub->each skill
-  const hubs = allNodes.filter((n) => n.kind === "hub" && n.category);
-  for (const hub of hubs) {
-    const cat = hub.category as SkillCategory;
-
-    // user -> hub (one per category)
-    const kUH = keyEdge(userId, hub.id);
-    if (!seen.has(kUH)) {
-      seen.add(kUH);
-      out.push({ id: edgeId(), from: userId, to: hub.id });
-    }
-
-    // hub -> every skill in that category
-    const skills = allNodes.filter((n) => n.kind === "skill" && n.category === cat);
-    for (const s of skills) {
-      const kHS = keyEdge(hub.id, s.id);
-      if (!seen.has(kHS)) {
-        seen.add(kHS);
-        out.push({ id: edgeId(), from: hub.id, to: s.id });
+    const nodeIds = new Set(allNodes.map((n) => n.id));
+    const seen = new Set<string>();
+    const out: CanvasEdge[] = [];
+  
+    const userId = "user-root";
+  
+    const hubs = allNodes.filter((n) => n.kind === "hub" && n.group);
+    const skills = allNodes.filter((n) => n.kind === "skill" && n.group);
+  
+    for (const hub of hubs) {
+      // user -> hub
+      const uh = `${userId}→${hub.id}`;
+      if (!seen.has(uh)) {
+        seen.add(uh);
+        out.push({ id: edgeId(), from: userId, to: hub.id });
+      }
+  
+      // hub -> skills in group
+      for (const skill of skills.filter((s) => s.group === hub.group)) {
+        const hs = `${hub.id}→${skill.id}`;
+        if (!seen.has(hs)) {
+          seen.add(hs);
+          out.push({ id: edgeId(), from: hub.id, to: skill.id });
+        }
       }
     }
+  
+    return out;
   }
-
-  return out;
-}
-
 /** ------------------ component ------------------ */
 
 export function SkillTreeBuilder() {
-  const [treeName, setTreeName] = React.useState("My skill tree");
+  const [treeName, setTreeName] = React.useState("Skill Tree");
   const [nodes, setNodes] = React.useState<CanvasNode[]>(() => [makeUserNode()]);
   const [edges, setEdges] = React.useState<CanvasEdge[]>(() => []);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
-
+  const [codeOpen, setCodeOpen] = React.useState(false);
   // undo/redo
   const undoStack = React.useRef<Snapshot[]>([]);
   const redoStack = React.useRef<Snapshot[]>([]);
@@ -320,37 +300,40 @@ export function SkillTreeBuilder() {
         const ux = user?.x ?? 0;
         const uy = user?.y ?? 0;
 
-        let hub = out.find((n) => n.id === hid) ?? null;
+        const hid = hubId(s.group);
 
+        let hub = out.find(
+          (n) => n.kind === "hub" && n.group === s.group
+        ) ?? null;
+        
         if (!hub) {
           const hubs = out.filter((n) => n.kind === "hub");
-          const uC = { x: ux + NODE_SIZE.w / 2, y: uy + NODE_SIZE.h / 2 };
-
+          const uC = centerOf(user!);
+        
           const usedAngles = hubs.map((h) => {
             const hc = centerOf(h);
             return Math.atan2(hc.y - uC.y, hc.x - uC.x);
           });
-
-          const angle = wedgeAngleForCategory(s.category, usedAngles);
-          const radius = 380 + hubs.length * 80;
-
-          const desiredHub = polar({ x: ux, y: uy }, angle, radius);
-          const spotHub = findFreeSpot(out, desiredHub, 26);
-
+        
+          const angle = wedgeAngleForCategory(s.group, usedAngles);
+          const radius = 380 + hubs.length * 120;
+        
+          const desiredHub = polar(uC, angle, radius);
+          const spotHub = findFreeSpot(out, desiredHub, 32);
+        
           hub = {
             id: hid,
             kind: "hub",
-            title: s.category,
-            subtitle: "Category",
-            description: `Category hub for ${s.category}.`,
-            category: s.category as SkillCategory,
+            title: s.group,
+            subtitle: "Group",
+            group: s.group,
+            category: null,
             x: spotHub.x,
             y: spotHub.y,
           };
-
+        
           out.push(hub);
         }
-
         // Place skill outward along hub "lane"
         const existingSkills = out.filter((n) => n.kind === "skill" && n.category === s.category);
         const idx = existingSkills.length;
@@ -377,16 +360,17 @@ export function SkillTreeBuilder() {
         const spotSkill = findFreeSpot(out, desiredSkill, 26);
 
         out.push({
-          id: skillNodeId,
-          kind: "skill",
-          title: s.title,
-          subtitle: s.category,
-          description: s.description ?? `Learn ${s.title}.`,
-          skillId: s.id,
-          category: s.category as SkillCategory,
-          x: spotSkill.x,
-          y: spotSkill.y,
-        });
+            id: skillNodeId,
+            kind: "skill",
+            title: s.title,
+            subtitle: s.group,        // optional, but nice
+            description: s.description ?? `Learn ${s.title}.`,
+            skillId: s.id,
+            group: s.group,           // ✅ REQUIRED for colors
+            category: s.category,     // ✅ only shown on skill
+            x: spotSkill.x,
+            y: spotSkill.y,
+          });
 
         return out;
       });
@@ -421,15 +405,23 @@ export function SkillTreeBuilder() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#f4f4f3]">
-      <TopBar
-        treeName={treeName}
-        onTreeNameChange={(v) => {
-          commit("rename");
-          setTreeName(v);
-        }}
-        onSave={onSave}
-      />
+<TopBar
+  treeName={treeName}
+  onTreeNameChange={(v) => {
+    commit("rename");
+    setTreeName(v);
+  }}
+  onSave={onSave}
+  onOpenCode={() => setCodeOpen(true)}
+/>
 
+<CodeViewerDialog
+   open={codeOpen}
+   onOpenChange={setCodeOpen}
+   nodes={nodes}
+   treeName={treeName}
+ 
+/>
       <LeftMenu onAddSkill={onAddSkill} />
 
       <Canvas
@@ -459,6 +451,8 @@ export function SkillTreeBuilder() {
 
 // local import at bottom to avoid circulars in some setups
 import { RightInspector } from "@/components/layout/right";
+import { SkillCategory, SkillGroup } from "@/lib/categories";
+import { CodeViewerDialog } from "../layout/codeDialog";
 function RightInspectorNode({ node }: { node: CanvasNode }) {
   return <RightInspector node={node} />;
 }

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import type { CanvasNode } from "./types";
 import { User, Sparkles, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { GROUP_COLORS } from "@/lib/categories";
 
 const W = 260;
 const H = 78;
@@ -24,10 +25,16 @@ export function SkillNode({ node, onMove, selected = false, onSelect }: Props) {
   const isHub = node.kind === "hub";
 
   const Icon = isUser ? User : isHub ? Layers : Sparkles;
-
-  const badgeClass = isUser ? "bg-blue-100" : isHub ? "bg-purple-100" : "bg-emerald-100";
-  const iconClass = isUser ? "text-blue-700" : isHub ? "text-purple-700" : "text-emerald-700";
-
+  const group = node.group ?? null;
+  const colors = group ? GROUP_COLORS[group] : null;
+  
+  const badgeClass = isUser
+    ? "bg-blue-100"
+    : colors?.bg ?? "bg-neutral-100";
+  
+  const iconClass = isUser
+    ? "text-blue-700"
+    : colors?.text ?? "text-neutral-700";
   const title = node.title ?? "";
   const subtitle = node.subtitle ?? (isUser ? "Root" : isHub ? "Category" : "Skill");
 
@@ -98,13 +105,13 @@ export function SkillNode({ node, onMove, selected = false, onSelect }: Props) {
           <div className="text-[12px] text-black/45 leading-tight truncate mt-0.5">{subtitle}</div>
         </div>
 
-        {node.category ? (
-          <div className="ml-auto">
-            <span className="inline-flex items-center rounded-full border border-black/10 bg-black/[0.03] px-2 py-1 text-[10px] font-semibold text-black/60">
-              {node.category}
-            </span>
-          </div>
-        ) : null}
+        {node.kind === "skill" && node.category ? (
+  <div className="ml-auto">
+    <span className="inline-flex items-center rounded-full border border-black/10 bg-black/[0.03] px-2 py-1 text-[10px] font-semibold text-black/60">
+      {node.category}
+    </span>
+  </div>
+) : null}
       </div>
     </motion.div>
   );

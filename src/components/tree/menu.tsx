@@ -34,7 +34,7 @@ export function LeftMenu({ onAddSkill }: Props) {
 
   return (
     <TooltipProvider delayDuration={120}>
-<div className="fixed left-6 top-22 z-30 w-[260px] select-none h-[calc(100vh-6rem)]">
+<div className="fixed left-6 top-18 z-30 w-[260px] select-none h-[calc(100vh-6rem)]">
     <div className="flex flex-col rounded-[20px] bg-white/80 backdrop-blur border border-black/5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] overflow-hidden h-full">          {/* Header */}
           <div className="px-4 pt-3 pb-3">
             <div className="text-[12px] text-black/50 mt-1">Builder</div>
