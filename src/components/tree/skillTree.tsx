@@ -20,10 +20,17 @@ function edgeId() {
   return `e-${nanoid(8)}`;
 }
 
-function hubId(cat: SkillCategory) {
-  return `hub-${cat.toLowerCase().replaceAll("/", "-").replaceAll(" ", "-")}`;
-}
-
+function hubId(group: string, cat: string) {
+    return `hub-${group.toLowerCase().replaceAll("&", "and").replaceAll(" ", "-")}__${cat
+      .toLowerCase()
+      .replaceAll("&", "and")
+      .replaceAll("/", "-")
+      .replaceAll(" ", "-")}`;
+  }
+  
+  function wedgeKey(group: string, cat: string) {
+    return `${group} / ${cat}`;
+  }
 /** ------------------ placement + geometry helpers ------------------ */
 
 function stableHash(str: string) {
@@ -41,15 +48,15 @@ function angleDiff(a: number, b: number) {
 
 const WEDGES = [0, -35, 35, 180, 145, 215].map((d) => (d * Math.PI) / 180);
 
-function wedgeAngleForCategory(cat: SkillCategory, usedAngles: number[]) {
-  const base = stableHash(cat) % WEDGES.length;
-  for (let k = 0; k < WEDGES.length; k++) {
-    const a = WEDGES[(base + k) % WEDGES.length];
-    const tooClose = usedAngles.some((u) => Math.abs(angleDiff(a, u)) < (28 * Math.PI) / 180);
-    if (!tooClose) return a;
+function wedgeAngleForCategory(key: string, usedAngles: number[]) {
+    const base = stableHash(key) % WEDGES.length;
+    for (let k = 0; k < WEDGES.length; k++) {
+      const a = WEDGES[(base + k) % WEDGES.length];
+      const tooClose = usedAngles.some((u) => Math.abs(angleDiff(a, u)) < (28 * Math.PI) / 180);
+      if (!tooClose) return a;
+    }
+    return WEDGES[base];
   }
-  return WEDGES[base];
-}
 
 function polar(origin: { x: number; y: number }, angle: number, r: number) {
   return { x: origin.x + Math.cos(angle) * r, y: origin.y + Math.sin(angle) * r };
@@ -304,7 +311,7 @@ export function SkillTreeBuilder() {
       commit("add-skill");
 
       const userId = "user-root";
-      const hid = hubId(s.category);
+      const hid = hubId(s.group ?? "", s.category);
 
       setNodes((prev) => {
         const out = [...prev];
@@ -336,7 +343,7 @@ export function SkillTreeBuilder() {
             title: s.category,
             subtitle: "Category",
             description: `Category hub for ${s.category}.`,
-            category: s.category,
+            category: s.category as SkillCategory,
             x: spotHub.x,
             y: spotHub.y,
           };
@@ -351,7 +358,7 @@ export function SkillTreeBuilder() {
         const skillNodeId = `skill-${s.id}-${nanoid(6)}`;
 
         const uC = { x: ux + NODE_SIZE.w / 2, y: uy + NODE_SIZE.h / 2 };
-        const hC = centerOf(hub);
+        const hC = centerOf(hub as CanvasNode);
 
         const laneAngle = Math.atan2(hC.y - uC.y, hC.x - uC.x);
         const outward = 260 + idx * 170;
@@ -360,7 +367,7 @@ export function SkillTreeBuilder() {
         const perpUnit = { x: Math.cos(laneAngle + Math.PI / 2), y: Math.sin(laneAngle + Math.PI / 2) };
         const perpMag = side * (90 + Math.floor(idx / 2) * 22);
 
-        const along = polar({ x: hub.x, y: hub.y }, laneAngle, outward);
+        const along = polar({ x: hub?.x ?? 0, y: hub?.y ?? 0 }, laneAngle, outward);
 
         const desiredSkill = {
           x: along.x + perpUnit.x * perpMag,
@@ -376,7 +383,7 @@ export function SkillTreeBuilder() {
           subtitle: s.category,
           description: s.description ?? `Learn ${s.title}.`,
           skillId: s.id,
-          category: s.category,
+          category: s.category as SkillCategory,
           x: spotSkill.x,
           y: spotSkill.y,
         });

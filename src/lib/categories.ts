@@ -1,0 +1,157 @@
+// src/components/tree/categories.ts
+export type SkillCategoryGroup =
+  | "Tools"
+  | "Development"
+  | "Data & AI"
+  | "Business"
+  | "DevOps"
+  | "Testing & Security"
+  | "Documentation"
+  | "Content & Media"
+  | "Research"
+  | "Databases"
+  | "Lifestyle"
+  | "Blockchain";
+
+export type SkillSubcategory =
+  // Tools
+  | "Productivity & Integration"
+  | "Automation Tools"
+  | "Debugging"
+  | "System Administration"
+  | "IDE Plugins"
+  | "CLI Tools"
+  | "Domain & DNS Tools"
+  // Development
+  | "CMS & Platforms"
+  | "Architecture Patterns"
+  | "Full Stack"
+  | "Frontend"
+  | "Scripting"
+  | "Game Development"
+  | "Mobile"
+  | "Backend"
+  | "Package & Distribution"
+  | "E-commerce Development"
+  | "Framework Internals"
+  // Data & AI
+  | "LLM & AI"
+  | "Data Analysis"
+  | "Data Engineering"
+  | "Machine Learning"
+  // Business
+  | "Project Management"
+  | "Sales & Marketing"
+  | "Finance & Investment"
+  | "Health & Fitness"
+  | "Business Apps"
+  | "Real Estate & Legal"
+  | "Payment"
+  | "E-commerce"
+  // DevOps
+  | "CI/CD"
+  | "Git Workflows"
+  | "Cloud"
+  | "Containers"
+  | "Monitoring"
+  // Testing & Security
+  | "Testing"
+  | "Code Quality"
+  | "Security"
+  // Documentation
+  | "Knowledge Base"
+  | "Technical Docs"
+  | "Education"
+  // Content & Media
+  | "Content Creation"
+  | "Documents"
+  | "Design"
+  | "Media"
+  // Research
+  | "Academic"
+  | "Scientific Computing"
+  | "Computational Chemistry"
+  | "Bioinformatics"
+  | "Lab Tools"
+  | "Astronomy & Physics"
+  // Databases
+  | "SQL Databases"
+  | "Database Tools"
+  | "NoSQL Databases"
+  // Lifestyle
+  | "Divination & Mysticism"
+  | "Literature & Writing"
+  | "Philosophy & Ethics"
+  | "Wellness & Health"
+  | "Arts & Crafts"
+  | "Culinary Arts"
+  // Blockchain
+  | "Web3 Tools"
+  | "Smart Contracts"
+  | "DeFi";
+
+export type CategoryTree = Record<SkillCategoryGroup, SkillSubcategory[]>;
+
+export const CATEGORY_TREE: CategoryTree = {
+  Tools: [
+    "Productivity & Integration",
+    "Automation Tools",
+    "Debugging",
+    "System Administration",
+    "IDE Plugins",
+    "CLI Tools",
+    "Domain & DNS Tools",
+  ],
+  Development: [
+    "CMS & Platforms",
+    "Architecture Patterns",
+    "Full Stack",
+    "Frontend",
+    "Scripting",
+    "Game Development",
+    "Mobile",
+    "Backend",
+    "Package & Distribution",
+    "E-commerce Development",
+    "Framework Internals",
+  ],
+  "Data & AI": ["LLM & AI", "Data Analysis", "Data Engineering", "Machine Learning"],
+  Business: [
+    "Project Management",
+    "Sales & Marketing",
+    "Finance & Investment",
+    "Health & Fitness",
+    "Business Apps",
+    "Real Estate & Legal",
+    "Payment",
+    "E-commerce",
+  ],
+  DevOps: ["CI/CD", "Git Workflows", "Cloud", "Containers", "Monitoring"],
+  "Testing & Security": ["Testing", "Code Quality", "Security"],
+  Documentation: ["Knowledge Base", "Technical Docs", "Education"],
+  "Content & Media": ["Content Creation", "Documents", "Design", "Media"],
+  Research: [
+    "Academic",
+    "Scientific Computing",
+    "Computational Chemistry",
+    "Bioinformatics",
+    "Lab Tools",
+    "Astronomy & Physics",
+  ],
+  Databases: ["SQL Databases", "Database Tools", "NoSQL Databases"],
+  Lifestyle: [
+    "Divination & Mysticism",
+    "Literature & Writing",
+    "Philosophy & Ethics",
+    "Wellness & Health",
+    "Arts & Crafts",
+    "Culinary Arts",
+  ],
+  Blockchain: ["Web3 Tools", "Smart Contracts", "DeFi"],
+};
+
+export const CATEGORY_GROUPS = Object.keys(CATEGORY_TREE) as SkillCategoryGroup[];
+
+export function allSubcategories(): SkillSubcategory[] {
+  return CATEGORY_GROUPS.flatMap((g) => CATEGORY_TREE[g]);
+}

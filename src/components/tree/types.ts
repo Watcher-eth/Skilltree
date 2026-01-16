@@ -1,3 +1,5 @@
+import type { SkillCategoryGroup, SkillSubcategory } from "@/lib/categories";
+
 export type SkillCategory =
   | "Frontend"
   | "Backend"
@@ -7,15 +9,16 @@ export type SkillCategory =
   | "Debugging"
   | "Design";
 
-export type Skill = {
-  id: string;
-  title: string;
-  description: string;
-  category: SkillCategory;
-  icon?: string;
-  color?: "blue" | "amber" | "green" | "purple" | "rose" | "slate";
-};
-
+  export type Skill = {
+    id: string;
+    title: string;
+    description?: string;
+    // what you previously called category (Frontend, Backend...) is actually the subcategory:
+    category: SkillSubcategory;
+  
+    // optional but useful:
+    group?: SkillCategoryGroup;
+  };
 export type NodeKind = "user" | "hub" | "skill";
 
 export type CanvasNode = {
