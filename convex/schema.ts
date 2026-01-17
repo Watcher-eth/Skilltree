@@ -1,62 +1,59 @@
+// convex/schema.ts
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-export default defineSchema({
-  users: defineTable({
-    // optional if you want a profile page, display name, etc.
-    name: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
-  }),
+const edge = v.object({
+  id: v.string(),
+  from: v.string(),
+  to: v.string(),
+});
 
+const node = v.object({
+  id: v.string(),
+  kind: v.union(v.literal("user"), v.literal("hub"), v.literal("skill")),
+  title: v.string(),
+  x: v.float64(),
+  y: v.float64(),
+
+  // optional metadata
+  subtitle: v.optional(v.string()),
+  description: v.optional(v.string()),
+  group: v.optional(v.string()),
+  skillId: v.optional(v.string()),
+
+  // ✅ allow missing (do NOT require string)
+  category: v.optional(v.string()),
+});
+
+export default defineSchema({
   skillTrees: defineTable({
-    ownerId: v.optional(v.id("users")), // if you add auth later, this becomes required
     title: v.string(),
     description: v.optional(v.string()),
     isPublic: v.boolean(),
-    slug: v.optional(v.string()),
-
-    // denormalized for quick list views
+    slug: v.string(),
+    ownerId: v.optional(v.id("users")),
     nodeCount: v.number(),
     edgeCount: v.number(),
-
-    updatedAt: v.number(),
     createdAt: v.number(),
+    updatedAt: v.number(),
   })
+    .index("by_slug", ["slug"])
     .index("by_owner", ["ownerId"])
-    .index("by_public", ["isPublic", "updatedAt"])
-    .index("by_slug", ["slug"]),
-
+    .index("by_public", ["isPublic", "updatedAt"]),
+    
   treeSnapshots: defineTable({
     treeId: v.id("skillTrees"),
-
-    // store the whole canvas payload as one doc
-    // Convex is fine with nested arrays/objects (within size limits)
-    nodes: v.array(
-      v.object({
-        id: v.string(),
-        kind: v.union(v.literal("user"), v.literal("hub"), v.literal("skill")),
-        title: v.string(),
-        subtitle: v.optional(v.string()),
-        description: v.optional(v.string()),
-
-        // your existing node fields:
-        skillId: v.optional(v.string()),
-        group: v.optional(v.string()),
-        category: v.optional(v.string()),
-
-        x: v.number(),
-        y: v.number(),
-      })
-    ),
-    edges: v.array(
-      v.object({
-        id: v.string(),
-        from: v.string(),
-        to: v.string(),
-      })
-    ),
-
     version: v.number(),
     createdAt: v.number(),
+
+    // ✅ top-level, not nested
+    nodes: v.array(node),
+    edges: v.array(edge),
   }).index("by_tree_version", ["treeId", "version"]),
+
+  // if you don’t have users yet, you can delete this table,
+  // but leaving it here is fine if you reference ownerId later.
+  users: defineTable({
+    name: v.optional(v.string()),
+  }),
 });

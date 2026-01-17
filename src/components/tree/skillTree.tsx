@@ -19,7 +19,24 @@ type Snapshot = {
   treeName: string;
 };
 
+function sanitizeNodes(nodes: CanvasNode[]) {
+  return nodes.map((n) => {
+    const out: any = { ...n };
 
+    // Convex schema expects optional string, not null
+    if (out.category == null) delete out.category;
+    if (out.subtitle == null) delete out.subtitle;
+    if (out.description == null) delete out.description;
+    if (out.group == null) delete out.group;
+    if (out.skillId == null) delete out.skillId;
+
+    return out;
+  });
+}
+
+function sanitizeEdges(edges: CanvasEdge[]) {
+  return edges.map((e) => ({ id: e.id, from: e.from, to: e.to }));
+}
 
 function edgeId() {
   return `e-${nanoid(8)}`;
@@ -290,18 +307,22 @@ const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
         title: treeName,
         description: "",
         isPublic: true,
-        nodes: JSON.parse(JSON.stringify(nodes)),
-        edges: JSON.parse(JSON.stringify(edges)),
+        nodes: sanitizeNodes(JSON.parse(JSON.stringify(nodes))),
+        edges: sanitizeEdges(JSON.parse(JSON.stringify(edges))),
       };
-  
+  console.log("PAYLOAD", payload);
+  console.log("TREEID", treeId);
       if (!treeId) {
         const res = await createTree(payload as any);
+        console.log("CREATED", res);
+
         setTreeId(res.treeId);
         setLastSavedAt(Date.now());
         return;
       }
   
-      await saveSnapshot({ ...(payload as any), treeId });
+      const res = await saveSnapshot({ ...(payload as any), treeId });
+      console.log("SAVED", res);
       setLastSavedAt(Date.now());
     } catch (err: any) {
       console.error("SAVE FAILED", err);
@@ -310,6 +331,7 @@ const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
       setIsSaving(false);
     }
   }, [treeId, treeName, nodes, edges, createTree, saveSnapshot]);
+  
   React.useEffect(() => {
     setEdges((prev) => {
       const next = reconcileEdges(nodes, prev);
