@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { motion } from "framer-motion";
 import type { CanvasEdge, CanvasNode } from "./types";
 import { NODE_SIZE, PORT_R } from "./Node";
@@ -61,7 +60,7 @@ export function EdgesLayer({ nodes, edges }: Props) {
             <path
               d={d}
               fill="none"
-              stroke="rgba(255,255,255,0.65)"
+              stroke="rgba(255,255,255,0.9c)"
               strokeWidth={1}
               strokeLinecap="round"
             />

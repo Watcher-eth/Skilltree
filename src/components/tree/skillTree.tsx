@@ -8,6 +8,9 @@ import { Canvas } from "./Canvas";
 import { TopBar } from "@/components/layout/top";
 import { BottomBar } from "@/components/layout/bottom";
 import { NODE_SIZE, PORT_R } from "./Node";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 type Snapshot = {
   nodes: CanvasNode[];
@@ -15,6 +18,8 @@ type Snapshot = {
   selectedId: string | null;
   treeName: string;
 };
+
+
 
 function edgeId() {
   return `e-${nanoid(8)}`;
@@ -168,6 +173,13 @@ export function SkillTreeBuilder() {
   const [edges, setEdges] = React.useState<CanvasEdge[]>(() => []);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [codeOpen, setCodeOpen] = React.useState(false);
+  const createTree = useMutation(api.skillTrees.create);
+const saveSnapshot = useMutation(api.skillTrees.saveSnapshot);
+
+// if you want to also set URL after save
+const [treeId, setTreeId] = React.useState<Id<"skillTrees"> | null>(null);
+const [isSaving, setIsSaving] = React.useState(false);
+const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
   // undo/redo
   const undoStack = React.useRef<Snapshot[]>([]);
   const redoStack = React.useRef<Snapshot[]>([]);
@@ -267,16 +279,37 @@ export function SkillTreeBuilder() {
     setSelectedId(null);
   }, [selectedId, commit]);
 
-  // Save (localStorage)
-  const onSave = React.useCallback(() => {
-    const payload = { treeName, nodes, edges, savedAt: new Date().toISOString() };
-    localStorage.setItem("skilltree:last", JSON.stringify(payload));
-  }, [treeName, nodes, edges]);
+  const router = useRouter();
 
-  /**
-   * ✅ FIX: whenever nodes change, reconcile edges to guarantee hub->skill edges exist.
-   * This is the key reason your screenshot shows missing edges.
-   */
+  
+  const onSave = React.useCallback(async () => {
+    try {
+      setIsSaving(true);
+  
+      const payload = {
+        title: treeName,
+        description: "",
+        isPublic: true,
+        nodes: JSON.parse(JSON.stringify(nodes)),
+        edges: JSON.parse(JSON.stringify(edges)),
+      };
+  
+      if (!treeId) {
+        const res = await createTree(payload as any);
+        setTreeId(res.treeId);
+        setLastSavedAt(Date.now());
+        return;
+      }
+  
+      await saveSnapshot({ ...(payload as any), treeId });
+      setLastSavedAt(Date.now());
+    } catch (err: any) {
+      console.error("SAVE FAILED", err);
+      alert(err?.message ?? String(err));
+    } finally {
+      setIsSaving(false);
+    }
+  }, [treeId, treeName, nodes, edges, createTree, saveSnapshot]);
   React.useEffect(() => {
     setEdges((prev) => {
       const next = reconcileEdges(nodes, prev);
@@ -291,8 +324,6 @@ export function SkillTreeBuilder() {
       commit("add-skill");
 
       const userId = "user-root";
-      const hid = hubId(s.group ?? "", s.category);
-
       setNodes((prev) => {
         const out = [...prev];
 
@@ -300,8 +331,8 @@ export function SkillTreeBuilder() {
         const ux = user?.x ?? 0;
         const uy = user?.y ?? 0;
 
-        const hid = hubId(s.group);
-
+        const hid = hubId(s.group as SkillGroup);
+        
         let hub = out.find(
           (n) => n.kind === "hub" && n.group === s.group
         ) ?? null;
@@ -382,6 +413,19 @@ export function SkillTreeBuilder() {
     [commit]
   );
 
+    //cmd + s
+    React.useEffect(() => {
+      const onKeyDown = (e: KeyboardEvent) => {
+        const meta = e.metaKey || e.ctrlKey;
+        if (meta && e.key.toLowerCase() === "s") {
+          e.preventDefault();
+          void onSave();
+        }
+      };
+      window.addEventListener("keydown", onKeyDown);
+      return () => window.removeEventListener("keydown", onKeyDown);
+    }, [onSave]);
+
   // keyboard shortcuts
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -411,10 +455,11 @@ export function SkillTreeBuilder() {
     commit("rename");
     setTreeName(v);
   }}
-  onSave={onSave}
+  onSave={() => void onSave()}
   onOpenCode={() => setCodeOpen(true)}
+  saving={isSaving}
+  lastSavedAt={lastSavedAt}
 />
-
 <CodeViewerDialog
    open={codeOpen}
    onOpenChange={setCodeOpen}
@@ -453,6 +498,7 @@ export function SkillTreeBuilder() {
 import { RightInspector } from "@/components/layout/right";
 import { SkillCategory, SkillGroup } from "@/lib/categories";
 import { CodeViewerDialog } from "../layout/codeDialog";
+import { useRouter } from "next/router"
 function RightInspectorNode({ node }: { node: CanvasNode }) {
   return <RightInspector node={node} />;
 }

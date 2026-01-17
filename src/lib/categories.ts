@@ -1,4 +1,3 @@
-import { SkillGroup } from "@/components/tree/skills";
 
 // src/components/tree/categories.ts
 export type SkillCategoryGroup =

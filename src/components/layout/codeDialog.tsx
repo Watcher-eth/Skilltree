@@ -122,10 +122,10 @@ export function CodeViewerDialog({
             <div className="p-2">
               <div
                 className="
-                  max-h-[200px] 
+                h-full
                   bg-white
-                  rounded-2xl
-                  px-6 py-5
+                  rounded-3xl
+                 p-6 px-8
                   flex flex-col
                   shadow-[0_10px_40px_rgba(0,0,0,0.08)]
                 "
@@ -135,12 +135,13 @@ export function CodeViewerDialog({
 
 
                 {/* Skill list */}
-                <div className="flex-1 overflow-auto pr-1">
+                <div className="flex-1 overflow-auto ">
                   <div className="space-y-3">
                     {skills.map((s) => (
                       <div
                         key={s.id}
-                        className="rounded-[14px] border border-black/10 px-4 py-3"
+                        className="border                   rounded-2xl
+ border-black/10 p-3"
                       >
                         <div className="text-[15px] font-medium">
                           {s.title}

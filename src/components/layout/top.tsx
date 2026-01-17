@@ -8,6 +8,8 @@ type Props = {
   onTreeNameChange: (v: string) => void;
   onSave: () => void;
   onOpenCode: () => void;
+  saving?: boolean;
+  lastSavedAt?: number | null;
 };
 
 export function TopBar({
@@ -15,6 +17,8 @@ export function TopBar({
   onTreeNameChange,
   onSave,
   onOpenCode,
+  saving, 
+  lastSavedAt,
 }: Props) {
   return (
     <div className="fixed top-6 left-6 right-6 z-40 pointer-events-none">
@@ -23,7 +27,7 @@ export function TopBar({
           <input
             value={treeName}
             onChange={(e) => onTreeNameChange(e.target.value)}
-            className="text-[22px] w-[140px] font-semibold text-black/80 outline-none focus:ring-2 focus:ring-black/10"
+            className="text-[22px] w-[100px] font-semibold text-black/80 outline-none focus:ring-2 focus:ring-black/10"
           />
           <span className="px-2 rounded-full bg-black/[0.05] border border-black/10 text-[12px] font-semibold text-black/55">
             Draft
@@ -46,11 +50,12 @@ export function TopBar({
           </button>
 
           <button
-            onClick={onSave}
-            className="ml-2 h-8 px-4 rounded-full bg-black text-white text-[13px] font-semibold shadow-sm hover:opacity-95"
-          >
-            Save
-          </button>
+  onClick={onSave}
+  disabled={saving}
+  className="ml-2 h-8 px-4 rounded-full bg-black text-white text-[13px] font-semibold shadow-sm hover:opacity-95 disabled:opacity-60"
+>
+  {saving ? "Saving…" : "Save"}
+</button>
         </div>
       </div>
     </div>

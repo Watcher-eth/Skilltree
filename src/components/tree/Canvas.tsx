@@ -1,3 +1,4 @@
+// src/components/tree/Canvas.tsx
 "use client";
 
 import * as React from "react";
@@ -12,19 +13,18 @@ type Props = {
   selectedId: string | null;
   onSelectNode: (id: string | null) => void;
   onMoveNode: (id: string, world: { x: number; y: number }) => void;
+  readOnly?: boolean; // ✅ NEW
 };
 
 type Viewport = { x: number; y: number; z: number };
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
-export function Canvas({ nodes, edges, selectedId, onSelectNode, onMoveNode }: Props) {
+export function Canvas({ nodes, edges, selectedId, onSelectNode, onMoveNode, readOnly }: Props) {
   const ref = React.useRef<HTMLDivElement | null>(null);
 
-  // infinite canvas
   const [vp, setVp] = React.useState<Viewport>({ x: 0, y: 0, z: 1 });
 
-  // pan drag
   const panRef = React.useRef<{
     active: boolean;
     startX: number;
@@ -33,7 +33,6 @@ export function Canvas({ nodes, edges, selectedId, onSelectNode, onMoveNode }: P
     baseY: number;
   }>({ active: false, startX: 0, startY: 0, baseX: 0, baseY: 0 });
 
-  // screen -> world
   const screenToWorld = React.useCallback(
     (sx: number, sy: number) => {
       const r = ref.current?.getBoundingClientRect();
@@ -45,15 +44,14 @@ export function Canvas({ nodes, edges, selectedId, onSelectNode, onMoveNode }: P
     [vp.x, vp.y, vp.z]
   );
 
-  // initial center
   React.useEffect(() => {
     const r = ref.current?.getBoundingClientRect();
     if (!r) return;
     setVp({ x: r.width * 0.5, y: r.height * 0.55, z: 1 });
   }, []);
 
-  // zoom (wheel)
   const onWheel = (e: React.WheelEvent) => {
+    if (readOnly) return; // ✅ disable zoom in public viewer if desired
     e.preventDefault();
     const r = ref.current?.getBoundingClientRect();
     if (!r) return;
@@ -74,15 +72,16 @@ export function Canvas({ nodes, edges, selectedId, onSelectNode, onMoveNode }: P
     setVp({ x: nextX, y: nextY, z: nextZ });
   };
 
-  // background pan
   const onPointerDownBg = (e: React.PointerEvent) => {
+    if (readOnly) return; // ✅ disable panning + deselect
     if (e.button !== 0) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     panRef.current = { active: true, startX: e.clientX, startY: e.clientY, baseX: vp.x, baseY: vp.y };
-    onSelectNode(null); // click background clears selection (like builders)
+    onSelectNode(null);
   };
 
   const onPointerMoveBg = (e: React.PointerEvent) => {
+    if (readOnly) return;
     if (!panRef.current.active) return;
     const dx = e.clientX - panRef.current.startX;
     const dy = e.clientY - panRef.current.startY;
@@ -90,6 +89,7 @@ export function Canvas({ nodes, edges, selectedId, onSelectNode, onMoveNode }: P
   };
 
   const onPointerUpBg = (e: React.PointerEvent) => {
+    if (readOnly) return;
     if (!panRef.current.active) return;
     panRef.current.active = false;
     try {
@@ -99,7 +99,6 @@ export function Canvas({ nodes, edges, selectedId, onSelectNode, onMoveNode }: P
 
   return (
     <div ref={ref} className="fixed inset-0 overflow-hidden bg-[#f4f4f3]">
-      {/* dotted grid */}
       <div
         className="absolute inset-0 opacity-[0.35]"
         style={{
@@ -129,8 +128,12 @@ export function Canvas({ nodes, edges, selectedId, onSelectNode, onMoveNode }: P
               key={n.id}
               node={n}
               selected={selectedId === n.id}
-              onSelect={(id) => onSelectNode(id)}
+              onSelect={(id) => {
+                if (readOnly) return; // ✅ no selection in viewer
+                onSelectNode(id);
+              }}
               onMove={(id, client) => {
+                if (readOnly) return; // ✅ no drag in viewer
                 const w = screenToWorld(client.x, client.y);
                 onMoveNode(id, w);
               }}
@@ -139,7 +142,6 @@ export function Canvas({ nodes, edges, selectedId, onSelectNode, onMoveNode }: P
         </div>
       </div>
 
-      {/* subtle top fade so the topbar sits nicely */}
       <motion.div
         className="pointer-events-none fixed inset-x-0 top-0 h-24 z-10"
         style={{ background: "linear-gradient(to bottom, rgba(244,244,243,0.95), rgba(244,244,243,0))" }}

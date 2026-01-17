@@ -76,24 +76,27 @@ export function SkillNode({ node, onMove, selected = false, onSelect }: Props) {
       <div
         data-port="left"
         className={cn(
-          "absolute left-[-7px] top-1/2 -translate-y-1/2 h-[14px] w-[14px] rounded-full bg-white border border-black/15 shadow-sm",
+          "absolute left-[-7px] top-1/2 z-10 -translate-y-1/2 h-[14px] w-[14px] rounded-full bg-white border border-black/10 shadow-sm",
           selected && "ring-2 ring-black/15"
         )}
       />
       <div
         data-port="right"
         className={cn(
-          "absolute right-[-7px] top-1/2 -translate-y-1/2 h-[14px] w-[14px] rounded-full bg-white border border-black/15 shadow-sm",
+          "absolute right-[-7px] top-1/2 z-10 -translate-y-1/2 h-[14px] w-[14px] rounded-full bg-white border border-black/10 shadow-sm",
           selected && "ring-2 ring-black/15"
         )}
       />
-
+<div className={cn(
+          "h-full w-full rounded-[23px] bg-white/25 backdrop-blur border border-black/8",
+          "shadow-[0_14px_40px_rgba(0,0,0,0.08)]",
+          "flex items-center gap-3 p-1",
+          selected ? "ring-1 ring-black/9" : "ring-1 ring-black/0"
+        )}>
       <div
         className={cn(
-          "h-full w-full rounded-[18px] bg-white/85 backdrop-blur border border-black/10",
-          "shadow-[0_14px_40px_rgba(0,0,0,0.08)]",
+          "h-full w-full rounded-[18px] bg-white/85 backdrop-blur border border-black/8",
           "flex items-center gap-3 px-3",
-          selected ? "ring-2 ring-black/10" : "ring-1 ring-black/0"
         )}
       >
         <div className={cn("h-10 w-10 rounded-[14px] flex items-center justify-center", badgeClass)}>
@@ -112,6 +115,7 @@ export function SkillNode({ node, onMove, selected = false, onSelect }: Props) {
     </span>
   </div>
 ) : null}
+</div>
       </div>
     </motion.div>
   );
