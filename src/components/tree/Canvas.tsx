@@ -1,11 +1,11 @@
 // src/components/tree/Canvas.tsx
 "use client";
 
-import * as React from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import type { CanvasEdge, CanvasNode } from "./types";
 import { SkillNode } from "./Node";
 import { EdgesLayer } from "./EdgesLayer";
+import React from "react"
 
 type Props = {
   nodes: CanvasNode[];

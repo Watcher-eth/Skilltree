@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import type { CanvasEdge, CanvasNode } from "./types";
 import { NODE_SIZE, PORT_R } from "./Node";
 

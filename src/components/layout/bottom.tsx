@@ -1,8 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { Undo2, Redo2, Trash2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 type Props = {
   canUndo: boolean;

@@ -1,11 +1,11 @@
 "use client";
 
-import * as React from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import type { CanvasNode } from "./types";
 import { User, Sparkles, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GROUP_COLORS } from "@/lib/categories";
+import React from "react"
 
 const W = 260;
 const H = 78;

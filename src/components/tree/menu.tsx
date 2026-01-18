@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Search, ChevronDown, Plus, Sparkles } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Skill, SkillCategory } from "./types";
@@ -9,6 +8,8 @@ import { CATEGORY_TREE } from "@/lib/categories";
 import { GROUPS, type SkillGroup } from "./skills";
 import { cn } from "@/lib/utils";
 import { toAppSkill } from "@/lib/normalize";
+import React from "react"
+import { AnimatePresence } from "motion/react"
 
 type Props = {
   onAddSkill: (skill: Skill) => void;
