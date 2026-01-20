@@ -21,7 +21,6 @@ function uniqueSlug(title: string) {
   const suffix = Math.random().toString(36).slice(2, 7);
   return `${base}-${suffix}`;
 }
-
 export const create = mutation({
   args: {
     title: v.string(),
@@ -29,6 +28,7 @@ export const create = mutation({
     isPublic: v.boolean(),
     nodes: v.any(),
     edges: v.any(),
+    ownerId: v.id("users"),
   },
   handler: async (ctx, args) => {
     const t = now();
@@ -41,6 +41,7 @@ export const create = mutation({
       description: args.description ?? "",
       isPublic: args.isPublic,
       slug: uniqueSlug(args.title),
+      ownerId: args.ownerId,
       nodeCount: nodes.length,
       edgeCount: edges.length,
       createdAt: t,
@@ -160,5 +161,18 @@ export const getById = query({
         edges: latest.edges,
       },
     };
+  },
+});
+
+export const getMyLatest = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db
+      .query("skillTrees")
+      .withIndex("by_owner", (q) => q.eq("ownerId", userId))
+      .order("desc")
+      .first();
   },
 });

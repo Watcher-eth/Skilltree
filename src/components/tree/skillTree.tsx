@@ -234,6 +234,7 @@ export function SkillTreeBuilder({
   React.useEffect(() => {
     hasHydrated.current = true;
   }, []);
+  const { me } = useMe();
 
   // undo/redo
   const undoStack = React.useRef<Snapshot[]>([]);
@@ -346,6 +347,7 @@ export function SkillTreeBuilder({
         isPublic: true,
         nodes: sanitizeNodes(JSON.parse(JSON.stringify(nodes))),
         edges: sanitizeEdges(JSON.parse(JSON.stringify(edges))),
+        ownerId: me!._id,
       };
 
       if (!treeId) {
@@ -393,8 +395,7 @@ export function SkillTreeBuilder({
         window.clearTimeout(autosaveTimer.current);
       }
     };
-  }, [selectedId, nodes, edges, treeName, treeId]);
-
+  }, [selectedId, nodes, edges, treeName, treeId, onSave]);
 
   const onAddSkill = React.useCallback(
     (s: Skill) => {
@@ -578,6 +579,7 @@ import { RightInspector } from "@/components/layout/right";
 import { SkillCategory, SkillGroup } from "@/lib/categories";
 import { CodeViewerDialog } from "../layout/codeDialog";
 import { useRouter } from "next/router"
+import { useMe } from "../hooks/useMe"
 function RightInspectorNode({ node }: { node: CanvasNode }) {
   return <RightInspector node={node} />;
 }
