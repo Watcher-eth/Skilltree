@@ -25,8 +25,8 @@ export default NextAuth({
       return token;
     },
     async session({ session, token }) {
-      session.user.provider = token.provider;
-      session.user.providerAccountId = token.providerAccountId;
+      session.user.provider = token.provider!;
+      session.user.providerAccountId = token.providerAccountId!;
       return session;
     },
   },

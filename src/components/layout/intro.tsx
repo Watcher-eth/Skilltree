@@ -118,6 +118,7 @@ function AuthStep({
           email: session.user.email ?? undefined,
           name: session.user.name ?? "Anonymous",
           avatar: session.user.image ?? "",
+          onboarded: false,
         });
   
         onAuthed({
