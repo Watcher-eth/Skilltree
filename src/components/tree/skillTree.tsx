@@ -196,9 +196,11 @@ function reconcileEdges(allNodes: CanvasNode[], currentEdges: CanvasEdge[]) {
 export function SkillTreeBuilder({
   initialTree,
   initialSnapshot,
+  username,
 }: {
   initialTree?: InitialTree;
   initialSnapshot?: InitialSnapshot;
+  username?: string;
 }) {  
   const [treeId, setTreeId] = React.useState<Id<"skillTrees"> | null>(
     initialTree?._id ?? null
@@ -534,6 +536,8 @@ export function SkillTreeBuilder({
   onOpenCode={() => setCodeOpen(true)}
   saving={isSaving}
   lastSavedAt={lastSavedAt}
+  username={username}
+
 />
 <CodeViewerDialog
    open={codeOpen}

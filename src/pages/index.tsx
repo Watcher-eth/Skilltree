@@ -3,12 +3,15 @@
 import * as React from "react";
 import { AnimatePresence } from "motion/react";
 import { IntroOverlay } from "@/components/layout/intro";
-import { SkillTreeBuilder } from "@/components/tree/skillTree"
+import { SkillTreeBuilder } from "@/components/tree/skillTree";
+import { useMe } from "@/components/hooks/useMe";
 
-export function AppRoot() {
+export default function AppRoot() {
   const [showIntro, setShowIntro] = React.useState(false);
+  const { me, isLoading } = useMe();
 
   React.useEffect(() => {
+    if (typeof window === "undefined") return;
     setShowIntro(localStorage.getItem("onboardingComplete") !== "1");
   }, []);
 
@@ -17,9 +20,11 @@ export function AppRoot() {
     setShowIntro(false);
   };
 
+  if (isLoading) return null; // or splash screen
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#f4f4f3]">
-      <SkillTreeBuilder />
+      <SkillTreeBuilder username={me?.name} />
 
       <AnimatePresence>
         {showIntro && <IntroOverlay onComplete={finishIntro} />}

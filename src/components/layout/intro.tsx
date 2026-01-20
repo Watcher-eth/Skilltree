@@ -15,12 +15,11 @@ export function IntroOverlay({ onComplete }: { onComplete: () => void }) {
 
 
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
-  
+    if (step !== 0) return;
     if (localStorage.getItem("onboardingComplete") === "1") {
       onComplete();
     }
-  }, [onComplete]);
+  }, [step, onComplete]);
 
   const [profile, setProfile] = React.useState({
     name: "",

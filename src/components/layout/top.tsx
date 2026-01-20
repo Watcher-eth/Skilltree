@@ -10,6 +10,8 @@ type Props = {
   onOpenCode: () => void;
   saving?: boolean;
   lastSavedAt?: number | null;
+  username?: string; 
+
 };
 
 export function TopBar({
@@ -18,17 +20,26 @@ export function TopBar({
   onSave,
   onOpenCode,
   saving, 
-  lastSavedAt,
+username  
 }: Props) {
   return (
     <div className="fixed top-6 left-6 right-6 z-40 pointer-events-none">
       <div className="pointer-events-auto flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <input
-            value={treeName}
-            onChange={(e) => onTreeNameChange(e.target.value)}
-            className="text-[22px] w-[100px] font-semibold text-black/80 outline-none focus:ring-2 focus:ring-black/10"
-          />
+        <div className="flex items-center gap-2">
+  <span className="text-[22px] font-semibold text-black/80">
+    {username ? `${username}’s Tree` : treeName}
+  </span>
+
+  {/* Optional: allow renaming tree later */}
+  {!username && (
+    <input
+      value={treeName}
+      onChange={(e) => onTreeNameChange(e.target.value)}
+      className="text-[22px] w-[100px] font-semibold text-black/80 outline-none focus:ring-2 focus:ring-black/10"
+    />
+  )}
+</div>
           <span className="px-2 rounded-full bg-black/[0.05] border border-black/10 text-[12px] font-semibold text-black/55">
             Draft
           </span>
