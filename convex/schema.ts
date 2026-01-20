@@ -54,6 +54,14 @@ export default defineSchema({
   // if you don’t have users yet, you can delete this table,
   // but leaving it here is fine if you reference ownerId later.
   users: defineTable({
-    name: v.optional(v.string()),
-  }),
+    provider: v.string(),
+    providerAccountId: v.string(),
+    email: v.optional(v.string()),
+    name: v.string(),
+    avatar: v.string(),
+    createdAt: v.number(),
+    onboarded: v.boolean()
+  })
+    .index("by_provider", ["provider", "providerAccountId"]),
+
 });

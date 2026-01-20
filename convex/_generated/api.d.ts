@@ -10,6 +10,7 @@
 
 import type * as save from "../save.js";
 import type * as skillTrees from "../skillTrees.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +21,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   save: typeof save;
   skillTrees: typeof skillTrees;
+  users: typeof users;
 }>;
 
 /**
