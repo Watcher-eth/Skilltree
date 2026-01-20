@@ -64,11 +64,8 @@ function useDebouncedValue<T>(value: T, ms: number) {
 }
 
 export function LeftMenu({ onAddSkill }: Props) {
-  const [openGroup, setOpenGroup] = React.useState<SkillGroup | null>("Development");
-  const [openCat, setOpenCat] = React.useState<SkillCategory | null>(
-    (CATEGORY_TREE["Development"]?.[0] as SkillCategory) ?? null
-  );
-
+  const [openGroup, setOpenGroup] = React.useState<SkillGroup | null>(null);
+  const [openCat, setOpenCat] = React.useState<SkillCategory | null>(null);
   const [q, setQ] = React.useState("");
   const dq = useDebouncedValue(q.trim(), 180);
 
@@ -111,10 +108,9 @@ export function LeftMenu({ onAddSkill }: Props) {
       setCatLoading(true);
       try {
         // best-effort: query category label (and group to help relevance)
-        const query = `${activeCat} ${activeGroup}`;
-        const res = await fetch(`/api/skills/search?q=${encodeURIComponent(query)}&limit=24`, {
-          signal: controller.signal,
-        });
+        const res = await fetch(
+          `/api/skills/category?group=${encodeURIComponent(activeGroup)}&category=${encodeURIComponent(activeCat)}&limit=24`
+        )
         const json = (await res.json()) as SkillsMpSearchResponse;
 
         if (!res.ok || !json.success) {
@@ -316,10 +312,15 @@ console.log("LeftMenu", searchResults)
                 return (
                   <motion.div key={group} layout className="rounded-[16px] border border-black/10 bg-white overflow-hidden">
                     <button
-                      onClick={() => {
-                        setOpenGroup(isGroupOpen ? null : group);
-                        if (!isGroupOpen) setOpenCat((cats[0] as SkillCategory) ?? null);
-                      }}
+                    onClick={() => {
+                      if (isGroupOpen) {
+                        setOpenGroup(null);
+                        setOpenCat(null);
+                      } else {
+                        setOpenGroup(group);
+                        setOpenCat(null);
+                      }
+                    }}
                       className="w-full px-3 py-3 flex items-center justify-between hover:bg-black/[0.03]"
                     >
                       <div className="text-[13px] font-medium">{group}</div>

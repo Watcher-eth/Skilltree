@@ -133,3 +133,32 @@ export const getBySlug = query({
     };
   },
 });
+
+export const getById = query({
+  args: { treeId: v.id("skillTrees") },
+  handler: async (ctx, args) => {
+    const tree = await ctx.db.get(args.treeId);
+    if (!tree) return null;
+
+    const latest = await ctx.db
+      .query("treeSnapshots")
+      .withIndex("by_tree_version", (q) => q.eq("treeId", args.treeId))
+      .order("desc")
+      .first();
+
+    if (!latest) {
+      return {
+        tree,
+        snapshot: null,
+      };
+    }
+
+    return {
+      tree,
+      snapshot: {
+        nodes: latest.nodes,
+        edges: latest.edges,
+      },
+    };
+  },
+});

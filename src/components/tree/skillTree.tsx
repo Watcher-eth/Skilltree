@@ -19,6 +19,16 @@ type Snapshot = {
   treeName: string;
 };
 
+type InitialTree = {
+  _id: Id<"skillTrees">;
+  title: string;
+};
+
+type InitialSnapshot = {
+  nodes: CanvasNode[];
+  edges: CanvasEdge[];
+};
+
 function sanitizeNodes(nodes: CanvasNode[]) {
   return nodes.map((n) => {
     const out: any = { ...n };
@@ -38,16 +48,15 @@ function sanitizeEdges(edges: CanvasEdge[]) {
   return edges.map((e) => ({ id: e.id, from: e.from, to: e.to }));
 }
 
-function edgeId() {
-  return `e-${nanoid(8)}`;
+function edgeId(from: string, to: string) {
+  return `e:${from}->${to}`;
 }
+
 function hubId(group: SkillGroup) {
     return `hub-${group.toLowerCase().replaceAll(" ", "-")}`;
   }
   
-  function wedgeKey(group: string, cat: string) {
-    return `${group} / ${cat}`;
-  }
+
 /** ------------------ placement + geometry helpers ------------------ */
 
 function stableHash(str: string) {
@@ -140,12 +149,6 @@ function makeUserNode(): CanvasNode {
   };
 }
 
-/** ------------------ edge reconciliation (FIX) ------------------ */
-
-function keyEdge(from: string, to: string) {
-  return `${from}→${to}`;
-}
-
 /**
  * Rebuilds edges so rules are ALWAYS true:
  * - user-root -> hub(category) exists
@@ -167,16 +170,22 @@ function reconcileEdges(allNodes: CanvasNode[], currentEdges: CanvasEdge[]) {
       const uh = `${userId}→${hub.id}`;
       if (!seen.has(uh)) {
         seen.add(uh);
-        out.push({ id: edgeId(), from: userId, to: hub.id });
-      }
+        out.push({
+          id: edgeId(userId, hub.id),
+          from: userId,
+          to: hub.id,
+        });      }
   
       // hub -> skills in group
       for (const skill of skills.filter((s) => s.group === hub.group)) {
         const hs = `${hub.id}→${skill.id}`;
         if (!seen.has(hs)) {
           seen.add(hs);
-          out.push({ id: edgeId(), from: hub.id, to: skill.id });
-        }
+          out.push({
+            id: edgeId(hub.id, skill.id),
+            from: hub.id,
+            to: skill.id,
+          });        }
       }
     }
   
@@ -184,19 +193,46 @@ function reconcileEdges(allNodes: CanvasNode[], currentEdges: CanvasEdge[]) {
   }
 /** ------------------ component ------------------ */
 
-export function SkillTreeBuilder() {
-  const [treeName, setTreeName] = React.useState("Skill Tree");
-  const [nodes, setNodes] = React.useState<CanvasNode[]>(() => [makeUserNode()]);
-  const [edges, setEdges] = React.useState<CanvasEdge[]>(() => []);
+export function SkillTreeBuilder({
+  initialTree,
+  initialSnapshot,
+}: {
+  initialTree?: InitialTree;
+  initialSnapshot?: InitialSnapshot;
+}) {  
+  const [treeId, setTreeId] = React.useState<Id<"skillTrees"> | null>(
+    initialTree?._id ?? null
+  );
+
+  const [treeName, setTreeName] = React.useState(
+    initialTree?.title ?? "Skill Tree"
+  );
+
+  const [nodes, setNodes] = React.useState<CanvasNode[]>(() =>
+    initialSnapshot?.nodes?.length
+      ? initialSnapshot.nodes
+      : [makeUserNode()]
+  );
+
+  const [edges, setEdges] = React.useState<CanvasEdge[]>(
+    () => initialSnapshot?.edges ?? []
+  );
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [codeOpen, setCodeOpen] = React.useState(false);
-  const createTree = useMutation(api.skillTrees.create);
-const saveSnapshot = useMutation(api.skillTrees.saveSnapshot);
 
-// if you want to also set URL after save
-const [treeId, setTreeId] = React.useState<Id<"skillTrees"> | null>(null);
-const [isSaving, setIsSaving] = React.useState(false);
-const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
+  const createTree = useMutation(api.skillTrees.create);
+  const saveSnapshot = useMutation(api.skillTrees.saveSnapshot);
+
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
+
+  const autosaveTimer = React.useRef<number | null>(null);
+  const hasHydrated = React.useRef(false);
+
+  React.useEffect(() => {
+    hasHydrated.current = true;
+  }, []);
+
   // undo/redo
   const undoStack = React.useRef<Snapshot[]>([]);
   const redoStack = React.useRef<Snapshot[]>([]);
@@ -298,11 +334,10 @@ const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
 
   const router = useRouter();
 
-  
   const onSave = React.useCallback(async () => {
     try {
       setIsSaving(true);
-  
+
       const payload = {
         title: treeName,
         description: "",
@@ -310,19 +345,16 @@ const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
         nodes: sanitizeNodes(JSON.parse(JSON.stringify(nodes))),
         edges: sanitizeEdges(JSON.parse(JSON.stringify(edges))),
       };
-  console.log("PAYLOAD", payload);
-  console.log("TREEID", treeId);
+
       if (!treeId) {
         const res = await createTree(payload as any);
-        console.log("CREATED", res);
-
         setTreeId(res.treeId);
         setLastSavedAt(Date.now());
+        router.replace(`/edit/${res.treeId}`);
         return;
       }
-  
-      const res = await saveSnapshot({ ...(payload as any), treeId });
-      console.log("SAVED", res);
+
+      await saveSnapshot({ ...(payload as any), treeId });
       setLastSavedAt(Date.now());
     } catch (err: any) {
       console.error("SAVE FAILED", err);
@@ -330,16 +362,37 @@ const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
     } finally {
       setIsSaving(false);
     }
-  }, [treeId, treeName, nodes, edges, createTree, saveSnapshot]);
-  
+  }, [treeId, treeName, nodes, edges, createTree, saveSnapshot, router]);
+
+
   React.useEffect(() => {
     setEdges((prev) => {
       const next = reconcileEdges(nodes, prev);
-      // avoid infinite loops by only updating if something changed
       if (next.length === prev.length) return prev;
       return next;
     });
   }, [nodes]);
+
+  React.useEffect(() => {
+    if (!treeId) return;
+    if (!hasHydrated.current) return;
+    if (isSaving) return;
+
+    if (autosaveTimer.current) {
+      window.clearTimeout(autosaveTimer.current);
+    }
+
+    autosaveTimer.current = window.setTimeout(() => {
+      void onSave();
+    }, 800);
+
+    return () => {
+      if (autosaveTimer.current) {
+        window.clearTimeout(autosaveTimer.current);
+      }
+    };
+  }, [selectedId, nodes, edges, treeName, treeId]);
+
 
   const onAddSkill = React.useCallback(
     (s: Skill) => {

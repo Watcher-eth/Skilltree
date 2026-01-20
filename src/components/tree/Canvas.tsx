@@ -100,13 +100,55 @@ export function Canvas({ nodes, edges, selectedId, onSelectNode, onMoveNode, rea
   return (
     <div ref={ref} className="fixed inset-0 overflow-hidden bg-[#f4f4f3]">
       <div
-        className="absolute inset-0 opacity-[0.35]"
+        className="absolute inset-0 "
         style={{
           backgroundImage: "radial-gradient(circle at 1px 1px, rgba(0,0,0,0.08) 1px, transparent 0)",
           backgroundSize: "22px 22px",
         }}
       />
-
+  <div
+    className="absolute inset-0 opacity-[0.35]"
+    style={{
+      backgroundImage: `
+        linear-gradient(to right, #e7e5e4 1px, transparent 1px),
+        linear-gradient(to bottom, #e7e5e4 1px, transparent 1px)
+      `,
+      backgroundSize: "20px 20px",
+      backgroundPosition: "0 0",
+      maskImage: `
+        repeating-linear-gradient(
+          to right,
+          black 0px,
+          black 3px,
+          transparent 3px,
+          transparent 8px
+        ),
+        repeating-linear-gradient(
+          to bottom,
+          black 0px,
+          black 3px,
+          transparent 3px,
+          transparent 8px
+        )
+      `,
+      WebkitMaskImage: `
+        repeating-linear-gradient(
+          to right,
+          black 0px,
+          black 3px,
+          transparent 3px,
+          transparent 8px
+        ),
+        repeating-linear-gradient(
+          to bottom,
+          black 0px,
+          black 3px,
+          transparent 3px,
+          transparent 8px
+        )
+      `,
+    }}
+  />
       <div
         className="absolute inset-0"
         onWheel={onWheel}

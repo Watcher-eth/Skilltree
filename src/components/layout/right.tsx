@@ -6,7 +6,7 @@ import { Copy, TerminalSquare } from "lucide-react";
 
 function cmdForNode(n: CanvasNode) {
   const name = (n.title || "skill").toLowerCase().replaceAll(" ", "-");
-  return `bunx add-skill -g ${name}`;
+  return `bunx skills i ${name}`;
 }
 
 export function RightInspector({ node }: { node: CanvasNode }) {
