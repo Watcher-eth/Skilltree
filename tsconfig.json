@@ -25,6 +25,6 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "next-auth.d.ts"
-  ],
+, "src/lib/toast.tsx"  ],
   "exclude": ["node_modules"]
 }

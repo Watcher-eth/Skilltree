@@ -221,7 +221,7 @@ export function SkillTreeBuilder({
   );
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [codeOpen, setCodeOpen] = React.useState(false);
-
+  const [installOpen, setInstallOpen] = React.useState(false);
   const createTree = useMutation(api.skillTrees.create);
   const saveSnapshot = useMutation(api.skillTrees.saveSnapshot);
 
@@ -239,6 +239,9 @@ export function SkillTreeBuilder({
   // undo/redo
   const undoStack = React.useRef<Snapshot[]>([]);
   const redoStack = React.useRef<Snapshot[]>([]);
+
+  const lastAutosaveAt = React.useRef<number>(0);
+const AUTOSAVE_INTERVAL = 60_000; // 1 minute
 
   const snapshot = React.useCallback((): Snapshot => {
     return {
@@ -338,27 +341,46 @@ export function SkillTreeBuilder({
   const router = useRouter();
 
   const onSave = React.useCallback(async () => {
+    if (!me?._id) return;
+    if (isSaving) return;
+  
     try {
       setIsSaving(true);
-
-      const payload = {
-        title: treeName,
-        description: "",
-        isPublic: true,
-        nodes: sanitizeNodes(JSON.parse(JSON.stringify(nodes))),
-        edges: sanitizeEdges(JSON.parse(JSON.stringify(edges))),
-        ownerId: me!._id,
-      };
-
+  
+      const cleanNodes = sanitizeNodes(
+        JSON.parse(JSON.stringify(nodes))
+      );
+      const cleanEdges = sanitizeEdges(
+        JSON.parse(JSON.stringify(edges))
+      );
+  
       if (!treeId) {
-        const res = await createTree(payload as any);
+        // ─── CREATE ───────────────────────────────
+        const res = await createTree({
+          title: treeName,
+          description: "",
+          isPublic: true,
+          ownerId: me._id,
+          nodes: cleanNodes,
+          edges: cleanEdges,
+        });
+  
         setTreeId(res.treeId);
         setLastSavedAt(Date.now());
         router.replace(`/edit/${res.treeId}`);
         return;
       }
-
-      await saveSnapshot({ ...(payload as any), treeId });
+  
+      // ─── SNAPSHOT ─────────────────────────────
+      await saveSnapshot({
+        treeId,
+        title: treeName,
+        description: "",
+        isPublic: true,
+        nodes: cleanNodes,
+        edges: cleanEdges,
+      });
+  
       setLastSavedAt(Date.now());
     } catch (err: any) {
       console.error("SAVE FAILED", err);
@@ -366,8 +388,17 @@ export function SkillTreeBuilder({
     } finally {
       setIsSaving(false);
     }
-  }, [treeId, treeName, nodes, edges, createTree, saveSnapshot, router]);
-
+  }, [
+    treeId,
+    treeName,
+    nodes,
+    edges,
+    createTree,
+    saveSnapshot,
+    router,
+    me,
+    isSaving,
+  ]);
 
   React.useEffect(() => {
     setEdges((prev) => {
@@ -378,25 +409,19 @@ export function SkillTreeBuilder({
   }, [nodes]);
 
   React.useEffect(() => {
-    if (!treeId) return;
+    if (!treeId || !me?._id) return;
     if (!hasHydrated.current) return;
     if (isSaving) return;
-
-    if (autosaveTimer.current) {
-      window.clearTimeout(autosaveTimer.current);
-    }
-
-    autosaveTimer.current = window.setTimeout(() => {
-      void onSave();
-    }, 800);
-
-    return () => {
-      if (autosaveTimer.current) {
-        window.clearTimeout(autosaveTimer.current);
-      }
-    };
-  }, [selectedId, nodes, edges, treeName, treeId, onSave]);
-
+  
+    const now = Date.now();
+  
+    // Only autosave if at least 1 minute passed
+    if (now - lastAutosaveAt.current < AUTOSAVE_INTERVAL) return;
+  
+    lastAutosaveAt.current = now;
+    void onSave();
+  }, [nodes, edges, treeName, treeId]);
+  
   const onAddSkill = React.useCallback(
     (s: Skill) => {
       commit("add-skill");
@@ -534,6 +559,7 @@ export function SkillTreeBuilder({
     setTreeName(v);
   }}
   onSave={() => void onSave()}
+  onOpenInstall={() => setInstallOpen(true)}
   onOpenCode={() => setCodeOpen(true)}
   saving={isSaving}
   lastSavedAt={lastSavedAt}
@@ -564,7 +590,11 @@ export function SkillTreeBuilder({
         onRedo={redo}
         onDelete={selectedId && selectedId !== "user-root" ? deleteSelected : null}
       />
-
+<InstallSkillsDialog
+  open={installOpen}
+  onOpenChange={setInstallOpen}
+  nodes={nodes}
+/>
       {selectedNode ? (
         <div className="fixed right-6 top-[76px] z-30">
           <RightInspectorNode node={selectedNode} />
@@ -580,6 +610,7 @@ import { SkillCategory, SkillGroup } from "@/lib/categories";
 import { CodeViewerDialog } from "../layout/codeDialog";
 import { useRouter } from "next/router"
 import { useMe } from "../hooks/useMe"
+import { InstallSkillsDialog } from "../layout/installDialog"
 function RightInspectorNode({ node }: { node: CanvasNode }) {
   return <RightInspector node={node} />;
 }

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Settings, Code2, Download } from "lucide-react";
+import SkillSettingsMenu from "../tree/settingsDialog"
 
 type Props = {
   treeName: string;
@@ -11,6 +12,7 @@ type Props = {
   saving?: boolean;
   lastSavedAt?: number | null;
   username?: string; 
+  onOpenInstall: () => void;
 
 };
 
@@ -19,6 +21,7 @@ export function TopBar({
   onTreeNameChange,
   onSave,
   onOpenCode,
+  onOpenInstall,
   saving, 
 username  
 }: Props) {
@@ -46,17 +49,17 @@ username
         </div>
 
         <div className="flex items-center gap-2">
-        <button className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-white"
+        {/* <button className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-white"
         onClick={onOpenCode}
           >
             <Code2 className="h-5 w-5 text-black/60" />
-          </button>
+          </button> */}
 
-          <button className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-white">
-            <Settings className="h-5 w-5 text-black/60" />
-          </button>
+          <div className="h-8 w-8 flex items-center justify-center">
+  <SkillSettingsMenu />
+</div>
 
-          <button className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-white">
+          <button onClick={onOpenInstall} className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-white">
             <Download className="h-5 w-5 text-black/60" />
           </button>
 

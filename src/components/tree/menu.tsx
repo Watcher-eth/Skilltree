@@ -215,14 +215,14 @@ console.log("LeftMenu", searchResults)
   return (
     <TooltipProvider delayDuration={120}>
       <div className="fixed left-6 top-18 z-30 w-[260px] select-none h-[calc(100vh-6rem)]">
-        <div className="flex p-1.5 flex-col rounded-[24px] bg-white/20 backdrop-blur border border-black/5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] overflow-hidden h-full">
+        <div className="flex p-1 flex-col rounded-[24px] bg-white/20 backdrop-blur border border-black/5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] overflow-hidden h-full">
         <div className="flex flex-col rounded-[20px] bg-white/80 backdrop-blur border border-black/5  overflow-hidden h-full">
           {/* Header */}
           <div className="px-4 pt-3 pb-3">
-            <div className="text-[12px] text-black/50 mt-1">Builder</div>
+            <div className="text-[12px] text-black/50 mt-1">Skills</div>
 
             {/* Search */}
-            <div className="mt-4">
+            <div className="mt-2">
               <div className="flex items-center gap-2 rounded-[14px] border border-black/10 bg-white px-3 py-2">
                 <Search className="h-4 w-4 text-black/45" />
                 <input
