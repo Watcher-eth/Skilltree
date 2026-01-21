@@ -4,14 +4,26 @@ import * as React from "react";
 import type { CanvasNode } from "@/components/tree/types";
 import { Copy, TerminalSquare } from "lucide-react";
 import { showCopiedToast } from "@/lib/toast";
+import { PackageManager, useSkillSettings } from "@/lib/skillSettings"
 
-function cmdForNode(n: CanvasNode) {
-  const name = (n.title || "skill").toLowerCase().replaceAll(" ", "-");
-  return `bunx skills i ${name}`;
+function cmdForNode(n: CanvasNode, pkg: PackageManager) {
+  const name = n.title.toLowerCase().replaceAll(" ", "-");
+
+  switch (pkg) {
+    case "npm":
+      return `npx skills i ${name}`;
+    case "yarn":
+      return `yarn dlx skills i ${name}`;
+    case "pnpm":
+      return `pnpm dlx skills i ${name}`;
+    default:
+      return `bunx skills i ${name}`;
+  }
 }
 
 export function RightInspector({ node }: { node: CanvasNode }) {
-  const cmd = cmdForNode(node);
+  const { settings } = useSkillSettings();
+  const cmd = cmdForNode(node, settings.packageManager);
 
   return (
     <div className="w-[360px] rounded-[18px] bg-white/85 backdrop-blur border border-black/10 shadow-[0_16px_45px_rgba(0,0,0,0.08)] overflow-hidden">

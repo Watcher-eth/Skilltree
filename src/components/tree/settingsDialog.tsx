@@ -8,8 +8,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSkillSettings } from "@/lib/skillSettings";
 
-/* ───────────────────────── helpers (same device) ───────────────────────── */
+/* ───────────────────────── helpers ───────────────────────── */
+
 function Row(props: React.PropsWithChildren<{ className?: string }>) {
   return (
     <div className={cn("flex items-center justify-between gap-3", props.className)}>
@@ -28,52 +30,49 @@ function Label({ k, s }: { k: string; s?: string }) {
 }
 
 function Preset({
-    active,
-    children,
-    onClick,
-    className,
-  }: {
-    active?: boolean;
-    children: React.ReactNode;
-    onClick?: () => void;
-    className?: string;
-  }) {
-    return (
-      <button
-        onClick={onClick}
-        className={cn(
-          "h-9 rounded-xl border text-[12px] font-medium transition-colors",
-          "flex items-center justify-center select-none",
-          active
-            ? [
-                "border-[#00a6fb]",
-                "bg-[#00a6fb]/[0.06]",
-                "text-[#00a6fb]",
-                "font-semibold",
-                "cursor-default",
-              ]
-            : [
-                "border-black/10",
-                "bg-white",
-                "text-black/60",
-                "hover:border-black/20",
-                "hover:text-black",
-              ],
-          className
-        )}
-      >
-        {children}
-      </button>
-    );
-  }
+  active,
+  children,
+  onClick,
+  className,
+}: {
+  active?: boolean;
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "h-9 rounded-xl border text-[12px] transition-colors",
+        "flex items-center justify-center select-none",
+        active
+          ? [
+              "border-[#00a6fb]",
+              "bg-[#00a6fb]/[0.06]",
+              "text-[#00a6fb]",
+              "font-semibold",
+              "cursor-default",
+            ]
+          : [
+              "border-black/10",
+              "bg-white",
+              "text-black/60",
+              "hover:border-black/20",
+              "hover:text-black",
+            ],
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 /* ───────────────────────── component ───────────────────────── */
+
 export default function SkillSettingsMenu() {
-  const [pkgManager, setPkgManager] = React.useState<"npm" | "yarn" | "pnpm" | "bun">("bun");
-  const [infinitePoints, setInfinitePoints] = React.useState(false);
-  const [featuredOnly, setFeaturedOnly] = React.useState(false);
-  const [language, setLanguage] = React.useState<
-    "js/ts" | "python" | "rust" | "sql" | "c" | "cpp" | "go"
-  >("js/ts");
+  const { settings, setSettings } = useSkillSettings();
 
   return (
     <DropdownMenu>
@@ -105,7 +104,7 @@ export default function SkillSettingsMenu() {
         </div>
 
         {/* Package Manager */}
-        <div className="mt-2">
+        <div>
           <Row className="mb-2">
             <Label
               k="Package Manager"
@@ -113,12 +112,14 @@ export default function SkillSettingsMenu() {
             />
           </Row>
 
-          <div className="flex gap-2 mt-1">
+          <div className="flex gap-2">
             {(["npm", "yarn", "pnpm", "bun"] as const).map((pm) => (
               <Preset
                 key={pm}
-                active={pkgManager === pm}
-                onClick={() => setPkgManager(pm)}
+                active={settings.packageManager === pm}
+                onClick={() =>
+                  setSettings((s) => ({ ...s, packageManager: pm }))
+                }
                 className="flex-1"
               >
                 {pm}
@@ -136,17 +137,21 @@ export default function SkillSettingsMenu() {
             />
           </Row>
 
-          <div className="flex gap-2 mt-1">
+          <div className="flex gap-2">
             <Preset
-              active={!infinitePoints}
-              onClick={() => setInfinitePoints(false)}
+              active={!settings.infinitePoints}
+              onClick={() =>
+                setSettings((s) => ({ ...s, infinitePoints: false }))
+              }
               className="flex-1"
             >
               No
             </Preset>
             <Preset
-              active={infinitePoints}
-              onClick={() => setInfinitePoints(true)}
+              active={settings.infinitePoints}
+              onClick={() =>
+                setSettings((s) => ({ ...s, infinitePoints: true }))
+              }
               className="flex-1"
             >
               Yes
@@ -154,7 +159,7 @@ export default function SkillSettingsMenu() {
           </div>
         </div>
 
-        {/* Featured only */}
+        {/* Featured Only */}
         <div className="mt-5">
           <Row className="mb-2">
             <Label
@@ -163,17 +168,21 @@ export default function SkillSettingsMenu() {
             />
           </Row>
 
-          <div className="flex gap-2 mt-1">
+          <div className="flex gap-2">
             <Preset
-              active={!featuredOnly}
-              onClick={() => setFeaturedOnly(false)}
+              active={!settings.featuredOnly}
+              onClick={() =>
+                setSettings((s) => ({ ...s, featuredOnly: false }))
+              }
               className="flex-1"
             >
               No
             </Preset>
             <Preset
-              active={featuredOnly}
-              onClick={() => setFeaturedOnly(true)}
+              active={settings.featuredOnly}
+              onClick={() =>
+                setSettings((s) => ({ ...s, featuredOnly: true }))
+              }
               className="flex-1"
             >
               Yes
@@ -202,8 +211,13 @@ export default function SkillSettingsMenu() {
             ].map(([key, label]) => (
               <Preset
                 key={key}
-                active={language === key}
-                onClick={() => setLanguage(key as any)}
+                active={settings.language === key}
+                onClick={() =>
+                  setSettings((s) => ({
+                    ...s,
+                    language: key as any,
+                  }))
+                }
               >
                 {label}
               </Preset>

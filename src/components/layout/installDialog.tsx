@@ -6,6 +6,8 @@ import { Download, X, Terminal } from "lucide-react";
 import type { CanvasNode } from "@/components/tree/types";
 import { toast } from "sonner"
 import { showCopiedToast } from "@/lib/toast"
+import { useSkillSettings } from "@/lib/skillSettings"
+import { buildInstallCommand } from "@/lib/installCommands"
 
 const DOT_COLORS = [
   "#8B5CF6",
@@ -22,12 +24,6 @@ function colorFor(id: string) {
   return DOT_COLORS[hash % DOT_COLORS.length];
 }
 
-function buildInstallCommand(nodes: CanvasNode[]) {
-  const skills = nodes.map((n) =>
-    n.title.toLowerCase().replaceAll(" ", "-")
-  );
-  return `bunx skills i ${skills.join(" ")}`;
-}
 
 export function InstallSkillsDialog({
   open,
@@ -42,6 +38,7 @@ export function InstallSkillsDialog({
     () => nodes.filter((n) => n.kind === "skill"),
     [nodes]
   );
+  const { settings } = useSkillSettings();
 
   const [selected, setSelected] = React.useState<CanvasNode[]>(skills);
 
@@ -52,8 +49,10 @@ export function InstallSkillsDialog({
   const visible = selected.slice(0, 9);
   const overflow = selected.length - visible.length;
 
-  const command = buildInstallCommand(selected);
-
+  const command = React.useMemo(
+    () => buildInstallCommand(selected, settings.packageManager),
+    [selected, settings.packageManager]
+  );
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-[420px] rounded-xl border-0 bg-white  p-0 shadow-2xl">

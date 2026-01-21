@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 
 import "@/styles/globals.css"; // or wherever your globals are
 import { SessionProvider } from "next-auth/react"
+import { SkillSettingsProvider } from "@/lib/skillSettings"
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -11,11 +12,13 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <SessionProvider session={(pageProps as any).session}>
     <ConvexProvider client={convex}>
+    <SkillSettingsProvider>
       <Component {...pageProps} />
       <Toaster
   position="top-center"
   duration={2200}
-  />
+/>
+    </SkillSettingsProvider>
     </ConvexProvider>
     </SessionProvider>
   );
