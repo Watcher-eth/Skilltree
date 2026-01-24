@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
+import * as React from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronDown, Plus, Sparkles } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Skill, SkillCategory } from "./types";
@@ -8,8 +9,6 @@ import { CATEGORY_TREE } from "@/lib/categories";
 import { GROUPS, type SkillGroup } from "./skills";
 import { cn } from "@/lib/utils";
 import { toAppSkill } from "@/lib/normalize";
-import React from "react"
-import { AnimatePresence } from "motion/react"
 
 type Props = {
   onAddSkill: (skill: Skill) => void;
@@ -64,8 +63,11 @@ function useDebouncedValue<T>(value: T, ms: number) {
 }
 
 export function LeftMenu({ onAddSkill }: Props) {
-  const [openGroup, setOpenGroup] = React.useState<SkillGroup | null>(null);
-  const [openCat, setOpenCat] = React.useState<SkillCategory | null>(null);
+  const [openGroup, setOpenGroup] = React.useState<SkillGroup | null>("Development");
+  const [openCat, setOpenCat] = React.useState<SkillCategory | null>(
+    (CATEGORY_TREE["Development"]?.[0] as SkillCategory) ?? null
+  );
+
   const [q, setQ] = React.useState("");
   const dq = useDebouncedValue(q.trim(), 180);
 
@@ -108,9 +110,10 @@ export function LeftMenu({ onAddSkill }: Props) {
       setCatLoading(true);
       try {
         // best-effort: query category label (and group to help relevance)
-        const res = await fetch(
-          `/api/skills/category?group=${encodeURIComponent(activeGroup)}&category=${encodeURIComponent(activeCat)}&limit=24`
-        )
+        const query = `${activeCat} ${activeGroup}`;
+        const res = await fetch(`/api/skills/search?q=${encodeURIComponent(query)}&limit=24`, {
+          signal: controller.signal,
+        });
         const json = (await res.json()) as SkillsMpSearchResponse;
 
         if (!res.ok || !json.success) {
@@ -215,14 +218,14 @@ console.log("LeftMenu", searchResults)
   return (
     <TooltipProvider delayDuration={120}>
       <div className="fixed left-6 top-18 z-30 w-[260px] select-none h-[calc(100vh-6rem)]">
-        <div className="flex p-1 flex-col rounded-[24px] bg-white/20 backdrop-blur border border-black/5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] overflow-hidden h-full">
+        <div className="flex p-1.5 flex-col rounded-[24px] bg-white/20 backdrop-blur border border-black/5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] overflow-hidden h-full">
         <div className="flex flex-col rounded-[20px] bg-white/80 backdrop-blur border border-black/5  overflow-hidden h-full">
           {/* Header */}
           <div className="px-4 pt-3 pb-3">
-            <div className="text-[12px] text-black/50 mt-1">Skills</div>
+            <div className="text-[12px] text-black/50 mt-1">Builder</div>
 
             {/* Search */}
-            <div className="mt-2">
+            <div className="mt-4">
               <div className="flex items-center gap-2 rounded-[14px] border border-black/10 bg-white px-3 py-2">
                 <Search className="h-4 w-4 text-black/45" />
                 <input
@@ -312,15 +315,10 @@ console.log("LeftMenu", searchResults)
                 return (
                   <motion.div key={group} layout className="rounded-[16px] border border-black/10 bg-white overflow-hidden">
                     <button
-                    onClick={() => {
-                      if (isGroupOpen) {
-                        setOpenGroup(null);
-                        setOpenCat(null);
-                      } else {
-                        setOpenGroup(group);
-                        setOpenCat(null);
-                      }
-                    }}
+                      onClick={() => {
+                        setOpenGroup(isGroupOpen ? null : group);
+                        if (!isGroupOpen) setOpenCat((cats[0] as SkillCategory) ?? null);
+                      }}
                       className="w-full px-3 py-3 flex items-center justify-between hover:bg-black/[0.03]"
                     >
                       <div className="text-[13px] font-medium">{group}</div>

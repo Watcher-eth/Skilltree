@@ -44,15 +44,16 @@ export const getMe = query({
     provider: v.string(),
     providerAccountId: v.string(),
   },
-  handler: async (ctx, args) => {
-    return await ctx.db
+  handler: async (ctx, { provider, providerAccountId }) => {
+    const user = await ctx.db
       .query("users")
       .withIndex("by_provider", (q) =>
-        q
-          .eq("provider", args.provider)
-          .eq("providerAccountId", args.providerAccountId)
+        q.eq("provider", provider).eq("providerAccountId", providerAccountId)
       )
       .unique();
+
+    // 🔑 DO NOT THROW
+    return user ?? null;
   },
 });
 
@@ -66,9 +67,9 @@ export const updateProfile = mutation({
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
+    // if (!user) {
+    //   throw new Error("User not found");
+    // }
 
     await ctx.db.patch(args.userId, {
         name: args.name,

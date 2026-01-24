@@ -19,6 +19,6 @@ export function useMe() {
 
   return {
     me,
-    isLoading: status === "loading" || (provider && !me),
+    isLoading: status === "loading" || me === undefined,
   };
 }

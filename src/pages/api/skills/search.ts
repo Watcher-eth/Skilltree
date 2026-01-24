@@ -1,60 +1,35 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { ConvexHttpClient } from "convex/browser";
-import { api as skillsApi } from "../../../../convex-indexer/_generated/api";
 
-const client = new ConvexHttpClient(
-  process.env.INDEXER_CONVEX_URL!
-);
+function mustGetKey() {
+  const key = process.env.SKILLSMP_API_KEY;
+  if (!key) throw new Error("Missing SKILLSMP_API_KEY in env");
+  return key;
+}
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    if (req.method !== "GET") {
-      return res.status(405).json({ success: false });
-    }
+    if (req.method !== "GET") return res.status(405).json({ success: false, error: "Method not allowed" });
 
     const q = String(req.query.q ?? "").trim();
-    const limit = Number(req.query.limit ?? 20);
+    const page = String(req.query.page ?? "1");
+    const limit = String(req.query.limit ?? "20");
 
-    if (!q) {
-      return res.json({
-        success: true,
-        data: { skills: [] },
-      });
-    }
+    if (!q) return res.status(200).json({ success: true, data: { skills: [], pagination: null } });
 
-    const rows = await client.query(
-      skillsApi.skills_public.search,
-      { q, limit }
-    );
+    const url = new URL("https://skillsmp.com/api/v1/skills/search");
+    url.searchParams.set("q", q);
+    url.searchParams.set("page", page);
+    url.searchParams.set("limit", limit);
 
-    // 🔑 normalize Convex → client shape
-    const skills = rows.map((r: any) => ({
-      id: r.skillKey,
-      name: r.name,
-      description: r.description,
-      author: r.author,
-      githubUrl: r.repoUrl,
-      stars: r.stars,
-      updatedAt: r.updatedAt,
-      group: r.group,
-      category: r.category,
-    }));
-
-    return res.json({
-      success: true,
-      data: {
-        skills,
-        pagination: null,
-      },
+    const upstream = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${mustGetKey()}` },
     });
+
+    const json = await upstream.json();
+
+    // Pass-through status + body
+    return res.status(upstream.status).json(json);
   } catch (e: any) {
-    console.error("INDEXER SEARCH ERROR", e);
-    return res.status(500).json({
-      success: false,
-      error: e?.message ?? "Unknown error",
-    });
+    return res.status(500).json({ success: false, error: e?.message ?? "Unknown error" });
   }
 }
