@@ -142,7 +142,7 @@ function makeUserNode(): CanvasNode {
     kind: "user",
     title: "You",
     subtitle: "Root",
-    description: "This is the root of your skill tree.",
+    description: "Your Agent",
     category: null,
     x: -130,
     y: 220,
@@ -573,7 +573,7 @@ const AUTOSAVE_INTERVAL = 60_000; // 1 minute
    treeName={treeName}
  
 />
-      <LeftMenu onAddSkill={onAddSkill} />
+<SkillTreeSidebar onAddSkill={onAddSkill} />
 
       <Canvas
         nodes={nodes}
@@ -611,6 +611,7 @@ import { CodeViewerDialog } from "../layout/codeDialog";
 import { useRouter } from "next/router"
 import { useMe } from "../hooks/useMe"
 import { InstallSkillsDialog } from "../layout/installDialog"
+import { SkillTreeSidebar } from "../layout/sidebar"
 function RightInspectorNode({ node }: { node: CanvasNode }) {
   return <RightInspector node={node} />;
 }

@@ -1,14 +1,36 @@
 "use client";
 
 import * as React from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Search, ChevronDown, Plus, Sparkles } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Search,
+  Plus,
+  Boxes,
+  Wrench,
+  Code,
+  Brain,
+  Briefcase,
+  Server,
+  ShieldCheck,
+  FileText,
+  Video,
+  FlaskConical,
+  Database,
+  Heart,
+  Blocks,
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Skill, SkillCategory } from "./types";
 import { CATEGORY_TREE } from "@/lib/categories";
 import { GROUPS, type SkillGroup } from "./skills";
 import { cn } from "@/lib/utils";
 import { toAppSkill } from "@/lib/normalize";
+
+/* ───────────────── TYPES ───────────────── */
 
 type Props = {
   onAddSkill: (skill: Skill) => void;
@@ -22,36 +44,57 @@ type SkillsMpSearchResponse = {
       name: string;
       author?: string;
       description?: string;
-      githubUrl?: string;
-      skillUrl?: string;
-      stars?: number;
-      updatedAt?: number;
     }>;
-    pagination?: any;
   };
   error?: string;
 };
 
-type SkillsMpAiSearchResponse = {
-  success: boolean;
-  data?: {
-    data?: Array<{
-      score: number;
-      skill: {
-        id: string;
-        name: string;
-        author?: string;
-        description?: string;
-        githubUrl?: string;
-        skillUrl?: string;
-        stars?: number;
-        updatedAt?: number;
-      };
-    }>;
-    has_more?: boolean;
-  };
-  error?: string;
+/* ───────────────── ICON MAP ───────────────── */
+
+export const GROUP_ICONS: Record<
+  keyof typeof CATEGORY_TREE,
+  React.ElementType
+> = {
+  Tools: Wrench,
+  Development: Code,
+  "Data & AI": Brain,
+  Business: Briefcase,
+  DevOps: Server,
+  "Testing & Security": ShieldCheck,
+  Documentation: FileText,
+  "Content & Media": Video,
+  Research: FlaskConical,
+  Databases: Database,
+  Lifestyle: Heart,
+  Blockchain: Blocks,
 };
+
+function GroupIcon({ group }: { group: string }) {
+  const Icon = GROUP_ICONS[group as keyof typeof GROUP_ICONS] ?? Boxes;
+  return <Icon className="h-4 w-4" />;
+}
+
+/* ───────────────── CATEGORY COLORS ───────────────── */
+
+const CATEGORY_DOT_COLORS = [
+  "bg-blue-500",
+  "bg-emerald-500",
+  "bg-violet-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-cyan-500",
+];
+
+function categoryDotColor(cat: string) {
+  let hash = 0;
+  for (let i = 0; i < cat.length; i++) {
+    hash = (hash << 5) - hash + cat.charCodeAt(i);
+    hash |= 0;
+  }
+  return CATEGORY_DOT_COLORS[Math.abs(hash) % CATEGORY_DOT_COLORS.length];
+}
+
+/* ───────────────── HOOKS ───────────────── */
 
 function useDebouncedValue<T>(value: T, ms: number) {
   const [v, setV] = React.useState(value);
@@ -62,78 +105,56 @@ function useDebouncedValue<T>(value: T, ms: number) {
   return v;
 }
 
+/* ───────────────── COMPONENT ───────────────── */
+
 export function LeftMenu({ onAddSkill }: Props) {
-  const [openGroup, setOpenGroup] = React.useState<SkillGroup | null>("Development");
-  const [openCat, setOpenCat] = React.useState<SkillCategory | null>(
-    (CATEGORY_TREE["Development"]?.[0] as SkillCategory) ?? null
-  );
+  const [openGroup, setOpenGroup] =
+    React.useState<SkillGroup | null>("Development");
+  const [openCat, setOpenCat] = React.useState<SkillCategory | null>(null);
 
   const [q, setQ] = React.useState("");
   const dq = useDebouncedValue(q.trim(), 180);
 
-  // cache category -> skills
-  const catCache = React.useRef(new Map<string, { skills: Skill[]; at: number }>());
   const [catSkills, setCatSkills] = React.useState<Skill[]>([]);
   const [catLoading, setCatLoading] = React.useState(false);
   const [catError, setCatError] = React.useState<string | null>(null);
 
-  // search results
+  const [searchResults, setSearchResults] = React.useState<Skill[]>([]);
   const [searchLoading, setSearchLoading] = React.useState(false);
   const [searchError, setSearchError] = React.useState<string | null>(null);
-  const [searchResults, setSearchResults] = React.useState<Skill[]>([]);
-  const [searchMode, setSearchMode] = React.useState<"keyword" | "semantic">("keyword");
 
-  const activeGroup = openGroup;
-  const activeCat = openCat;
+  /* ───────── CATEGORY FETCH ───────── */
 
-  const catKey = activeGroup && activeCat ? `${activeGroup}::${activeCat}` : null;
-
-  // fetch skills for the currently open category
   React.useEffect(() => {
+    if (!openGroup || !openCat) return;
+
     let cancelled = false;
     const controller = new AbortController();
 
     async function run() {
-      if (!activeGroup || !activeCat) return;
-
+      setCatLoading(true);
       setCatError(null);
 
-      const key = `${activeGroup}::${activeCat}`;
-      const cached = catCache.current.get(key);
-
-      // cache for 10 minutes
-      if (cached && Date.now() - cached.at < 10 * 60 * 1000) {
-        setCatSkills(cached.skills);
-        return;
-      }
-
-      setCatLoading(true);
       try {
-        // best-effort: query category label (and group to help relevance)
-        const query = `${activeCat} ${activeGroup}`;
-        const res = await fetch(`/api/skills/search?q=${encodeURIComponent(query)}&limit=24`, {
-          signal: controller.signal,
-        });
-        const json = (await res.json()) as SkillsMpSearchResponse;
-
-        if (!res.ok || !json.success) {
-          throw new Error(json.error ?? "Failed to fetch category skills");
-        }
-
-        const skillsMp = json.data?.skills ?? [];
-        const normalized = skillsMp.map((s) =>
-          toAppSkill(s, { group: activeGroup, category: activeCat })
+        const res = await fetch(
+          `/api/skills/search?q=${encodeURIComponent(
+            `${openCat} ${openGroup}`
+          )}&limit=24`,
+          { signal: controller.signal }
         );
 
-        if (cancelled) return;
+        const json = (await res.json()) as SkillsMpSearchResponse;
+        if (!res.ok || !json.success)
+          throw new Error(json.error ?? "Failed");
 
-        catCache.current.set(key, { skills: normalized, at: Date.now() });
-        setCatSkills(normalized);
+        const normalized =
+          json.data?.skills?.map((s) =>
+            toAppSkill(s, { group: openGroup, category: openCat })
+          ) ?? [];
+
+        if (!cancelled) setCatSkills(normalized);
       } catch (e: any) {
-        if (cancelled) return;
-        if (e?.name === "AbortError") return;
-        setCatError(e?.message ?? "Failed to fetch skills");
-        setCatSkills([]);
+        if (!cancelled) setCatError(e.message);
       } finally {
         if (!cancelled) setCatLoading(false);
       }
@@ -144,65 +165,43 @@ export function LeftMenu({ onAddSkill }: Props) {
       cancelled = true;
       controller.abort();
     };
-  }, [catKey]); // re-run when group/category changes
+  }, [openGroup, openCat]);
 
-  // search bar: keyword for short queries; semantic for longer queries
+  /* ───────── SEARCH ───────── */
+
   React.useEffect(() => {
+    if (!dq) {
+      setSearchResults([]);
+      return;
+    }
+
     let cancelled = false;
     const controller = new AbortController();
 
     async function run() {
+      setSearchLoading(true);
       setSearchError(null);
 
-      if (!dq) {
-        setSearchResults([]);
-        setSearchLoading(false);
-        return;
-      }
-
-      const useSemantic = dq.length >= 16 || dq.includes("?") || dq.toLowerCase().startsWith("how ");
-      setSearchMode(useSemantic ? "semantic" : "keyword");
-      setSearchLoading(true);
-
       try {
-        if (useSemantic) {
-          const res = await fetch(`/api/skills/ai-search?q=${encodeURIComponent(dq)}`, {
-            signal: controller.signal,
-          });
-          const json = (await res.json()) as SkillsMpAiSearchResponse;
+        const res = await fetch(
+          `/api/skills/search?q=${encodeURIComponent(dq)}&limit=20`,
+          { signal: controller.signal }
+        );
 
-          if (!res.ok || !json.success) throw new Error(json.error ?? "AI search failed");
+        const json = (await res.json()) as SkillsMpSearchResponse;
+        if (!res.ok || !json.success)
+          throw new Error(json.error ?? "Search failed");
 
-          const rows = json.data?.data ?? [];
-          const normalized = rows
-            .slice(0, 12)
-            .map((r) =>
-              toAppSkill(r.skill, activeGroup && activeCat ? { group: activeGroup, category: activeCat } : undefined)
-            );
+        const normalized =
+          json.data?.skills?.map((s) =>
+            toAppSkill(s, openGroup && openCat
+              ? { group: openGroup, category: openCat }
+              : undefined)
+          ) ?? [];
 
-          if (cancelled) return;
-          setSearchResults(normalized);
-        } else {
-          const res = await fetch(`/api/skills/search?q=${encodeURIComponent(dq)}&limit=12`, {
-            signal: controller.signal,
-          });
-          const json = (await res.json()) as SkillsMpSearchResponse;
-
-          if (!res.ok || !json.success) throw new Error(json.error ?? "Search failed");
-
-          const skillsMp = json.data?.skills ?? [];
-          const normalized = skillsMp.map((s) =>
-            toAppSkill(s, activeGroup && activeCat ? { group: activeGroup, category: activeCat } : undefined)
-          );
-
-          if (cancelled) return;
-          setSearchResults(normalized);
-        }
+        if (!cancelled) setSearchResults(normalized);
       } catch (e: any) {
-        if (cancelled) return;
-        if (e?.name === "AbortError") return;
-        setSearchError(e?.message ?? "Search failed");
-        setSearchResults([]);
+        if (!cancelled) setSearchError(e.message);
       } finally {
         if (!cancelled) setSearchLoading(false);
       }
@@ -213,208 +212,160 @@ export function LeftMenu({ onAddSkill }: Props) {
       cancelled = true;
       controller.abort();
     };
-  }, [dq, activeGroup, activeCat]);
-console.log("LeftMenu", searchResults)
+  }, [dq, openGroup, openCat]);
+
+  /* ───────────────── RENDER ───────────────── */
+
   return (
     <TooltipProvider delayDuration={120}>
-      <div className="fixed left-6 top-18 z-30 w-[260px] select-none h-[calc(100vh-6rem)]">
-        <div className="flex p-1.5 flex-col rounded-[24px] bg-white/20 backdrop-blur border border-black/5 shadow-[0_10px_30px_rgba(0,0,0,0.06)] overflow-hidden h-full">
-        <div className="flex flex-col rounded-[20px] bg-white/80 backdrop-blur border border-black/5  overflow-hidden h-full">
-          {/* Header */}
-          <div className="px-4 pt-3 pb-3">
-            <div className="text-[12px] text-black/50 mt-1">Builder</div>
-
-            {/* Search */}
-            <div className="mt-4">
-              <div className="flex items-center gap-2 rounded-[14px] border border-black/10 bg-white px-3 py-2">
-                <Search className="h-4 w-4 text-black/45" />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search skills…"
-                  className="w-full bg-transparent text-[13px] outline-none placeholder:text-black/35"
-                />
-                {dq ? (
-                  <span
+      <div className="h-full flex">
+        {/* ICON RAIL */}
+        <div className="w-14 bg-white/50 backdrop-blur-md border border-black/10 rounded-l-xl flex flex-col items-center py-3 gap-2">
+          {GROUPS.map((group) => {
+            const active = openGroup === group;
+            return (
+              <Tooltip key={group}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => {
+                      setOpenGroup(group);
+                      setOpenCat(null);
+                    }}
                     className={cn(
-                      "ml-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]",
-                      searchMode === "semantic"
-                        ? "border-black/10 bg-black/[0.03] text-black/65"
-                        : "border-black/10 bg-white text-black/50"
+                      "h-10 w-10 rounded-lg flex items-center justify-center transition",
+                      active
+                        ? "bg-black text-white"
+                        : "text-black/50 hover:bg-black/10"
                     )}
-                    title={searchMode === "semantic" ? "Semantic search" : "Keyword search"}
                   >
-                    {searchMode === "semantic" ? <Sparkles className="h-3 w-3" /> : null}
-                    {searchMode === "semantic" ? "AI" : "KW"}
-                  </span>
-                ) : null}
-              </div>
+                    <GroupIcon group={group} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">{group}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
 
-              {/* Search results */}
-              <AnimatePresence initial={false}>
-                {dq ? (
-                  <motion.div
-                    layout
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="mt-3 overflow-hidden"
-                  >
-                    <div className="rounded-[14px] border border-black/10 bg-white overflow-hidden">
-                      {searchLoading ? (
-                        <div className="px-3 py-3 text-[12px] text-black/45">Searching…</div>
-                      ) : searchError ? (
-                        <div className="px-3 py-3 text-[12px] text-red-600/70">{searchError}</div>
-                      ) : searchResults.length ? (
-                        <div className="py-1">
-                          {searchResults.map((s) => (
-                            <Tooltip key={`${s.id}`}>
-                              <TooltipTrigger asChild>
-                                <button
-                                  onClick={() => onAddSkill(s)}
-                                  className="w-full px-3 py-2 flex items-center justify-between hover:bg-black/[0.03] text-left"
-                                >
-                                  <div className="min-w-0">
-                                    <div className="text-[13px] font-medium truncate">{s.title}</div>
-                                    <div className="text-[11px] text-black/45 truncate">
-                                      {s.group} • {s.category}
-                                    </div>
-                                  </div>
-                                  <span className="h-7 w-7 rounded-full border border-black/10 bg-white flex items-center justify-center">
-                                    <Plus className="h-4 w-4 text-black/60" />
-                                  </span>
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="right" className="max-w-[260px]">
-                                <div className="text-[12px] leading-relaxed">{s.description}</div>
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="px-3 py-3 text-[12px] text-black/45">
-                          No results for <span className="font-medium text-black/70">“{dq}”</span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
+        {/* MAIN PANEL */}
+        <div className="w-[260px] bg-white/60 backdrop-blur-md border border-l-0 border-black/10 rounded-r-xl overflow-hidden flex flex-col">
+          {/* HEADER */}
+          <div className="px-4 pt-3 pb-3 border-b border-black/10">
+            <div className="text-[12px] text-black/50">Builder</div>
+
+            <div className="mt-3 flex items-center gap-2 rounded-md bg-black/[0.06] px-3 py-2">
+              <Search className="h-4 w-4 text-black/40" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search skills…"
+                className="w-full bg-transparent text-[13px] outline-none placeholder:text-black/35"
+              />
             </div>
           </div>
 
-          {/* Sections */}
-          <div className="flex-1 min-h-0 px-2 pb-3 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-black/20">
-            <div className="px-2 py-2 text-[11px] font-medium text-black/40">Sections</div>
-
-            <div className="space-y-2 px-2 pb-2">
-              {GROUPS.map((group) => {
-                const isGroupOpen = openGroup === group;
-                const cats = CATEGORY_TREE[group] ?? [];
-
-                return (
-                  <motion.div key={group} layout className="rounded-[16px] border border-black/10 bg-white overflow-hidden">
-                    <button
-                      onClick={() => {
-                        setOpenGroup(isGroupOpen ? null : group);
-                        if (!isGroupOpen) setOpenCat((cats[0] as SkillCategory) ?? null);
-                      }}
-                      className="w-full px-3 py-3 flex items-center justify-between hover:bg-black/[0.03]"
-                    >
-                      <div className="text-[13px] font-medium">{group}</div>
-                      <motion.div
-                        animate={{ rotate: isGroupOpen ? 180 : 0 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 24 }}
-                      >
-                        <ChevronDown className="h-4 w-4 text-black/45" />
-                      </motion.div>
-                    </button>
-
-                    <AnimatePresence initial={false}>
-                      {isGroupOpen ? (
-                        <motion.div
-                          key="content"
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.18 }}
-                          className="overflow-hidden"
+          {/* CONTENT */}
+          <div className="flex-1 overflow-y-auto px-3 py-2">
+            {dq ? (
+              <div className="space-y-1">
+                {searchLoading && (
+                  <div className="text-[12px] text-black/40 px-2 py-1">
+                    Searching…
+                  </div>
+                )}
+                {searchError && (
+                  <div className="text-[12px] text-red-600 px-2 py-1">
+                    {searchError}
+                  </div>
+                )}
+                {!searchLoading &&
+                  !searchError &&
+                  searchResults.map((s) => (
+                    <Tooltip key={s.id}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => onAddSkill(s)}
+                          className="w-full flex items-center justify-between px-2 py-2 rounded hover:bg-black/[0.06]"
                         >
-                          <div className="px-2 pb-2 space-y-2">
-                            {cats.map((cat) => {
-                              const isCatOpen = openCat === cat;
+                          <span className="text-[13px] truncate">
+                            {s.title}
+                          </span>
+                          <Plus className="h-4 w-4 text-black/40" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        {s.description}
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+              </div>
+            ) : (
+              <div className="relative pl-3">
+                {openGroup &&
+                  CATEGORY_TREE[openGroup]?.map((cat) => {
+                    const isOpen = openCat === cat;
+                    return (
+                      <div key={cat} className="relative mb-2">
+                        {isOpen && (
+                          <div className="absolute left-[10px] top-[22px] bottom-2 w-px bg-black/10" />
+                        )}
 
-                              return (
-                                <div key={`${group}-${cat}`} className="rounded-[14px] border border-black/10 bg-white overflow-hidden">
-                                  <button
-                                    onClick={() => setOpenCat(isCatOpen ? null : (cat as SkillCategory))}
-                                    className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-black/[0.03]"
-                                  >
-                                    <div className="text-[12.5px] font-medium">{cat}</div>
-                                    <motion.div
-                                      animate={{ rotate: isCatOpen ? 180 : 0 }}
-                                      transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                        <button
+                          onClick={() =>
+                            setOpenCat(isOpen ? null : (cat as SkillCategory))
+                          }
+                          className="flex items-center gap-2 text-[13px] font-medium px-2 py-1 rounded hover:bg-black/[0.06]"
+                        >
+                          <span
+                            className={cn(
+                              "h-2.5 w-2.5 rounded-full",
+                              categoryDotColor(cat)
+                            )}
+                          />
+                          <span className="truncate">{cat}</span>
+                        </button>
+
+                        {isOpen && (
+                          <div className="pl-4 mt-1 space-y-1">
+                            {catLoading && (
+                              <div className="text-[12px] text-black/40 px-2 py-1">
+                                Loading…
+                              </div>
+                            )}
+                            {catError && (
+                              <div className="text-[12px] text-red-600 px-2 py-1">
+                                {catError}
+                              </div>
+                            )}
+                            {!catLoading &&
+                              !catError &&
+                              catSkills.map((s) => (
+                                <Tooltip key={s.id}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => onAddSkill(s)}
+                                      className="w-full flex items-center justify-between px-2 py-1.5 rounded hover:bg-black/[0.06]"
                                     >
-                                      <ChevronDown className="h-4 w-4 text-black/35" />
-                                    </motion.div>
-                                  </button>
-
-                                  <AnimatePresence initial={false}>
-                                    {isCatOpen ? (
-                                      <motion.div
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: "auto", opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        transition={{ duration: 0.16 }}
-                                        className="overflow-hidden"
-                                      >
-                                        <div className="px-2 pb-2">
-                                          {catLoading ? (
-                                            <div className="px-2 py-2 text-[12px] text-black/45">Loading…</div>
-                                          ) : catError ? (
-                                            <div className="px-2 py-2 text-[12px] text-red-600/70">{catError}</div>
-                                          ) : catSkills.length ? (
-                                            catSkills.slice(0, 24).map((s) => (
-                                              <Tooltip key={s.id}>
-                                                <TooltipTrigger asChild>
-                                                  <button
-                                                    onClick={() => onAddSkill(s)}
-                                                    className="w-full px-2 py-2 rounded-[12px] hover:bg-black/[0.03] flex items-center justify-between text-left"
-                                                  >
-                                                    <div className="text-[13px] truncate">{s.title}</div>
-                                                    <span className="h-7 w-7 rounded-full border border-black/10 bg-white flex items-center justify-center">
-                                                      <Plus className="h-4 w-4 text-black/60" />
-                                                    </span>
-                                                  </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="right" className="max-w-[260px]">
-                                                  <div className="text-[12px] leading-relaxed">{s.description}</div>
-                                                </TooltipContent>
-                                              </Tooltip>
-                                            ))
-                                          ) : (
-                                            <div className="px-2 py-2 text-[12px] text-black/45">
-                                              No results for this category yet.
-                                            </div>
-                                          )}
-                                        </div>
-                                      </motion.div>
-                                    ) : null}
-                                  </AnimatePresence>
-                                </div>
-                              );
-                            })}
+                                      <span className="text-[13px] truncate">
+                                        {s.title}
+                                      </span>
+                                      <Plus className="h-4 w-4 text-black/40" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" className="max-w-xs">
+                                    {s.description}
+                                  </TooltipContent>
+                                </Tooltip>
+                              ))}
                           </div>
-                        </motion.div>
-                      ) : null}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
-            </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
           </div>
         </div>
-      </div>
       </div>
     </TooltipProvider>
   );
