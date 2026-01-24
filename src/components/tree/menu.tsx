@@ -29,6 +29,10 @@ import { CATEGORY_TREE } from "@/lib/categories";
 import { GROUPS, type SkillGroup } from "./skills";
 import { cn } from "@/lib/utils";
 import { toAppSkill } from "@/lib/normalize";
+import { GROUP_ANIMATED_ICONS } from "./categoryIcons";
+import { AnimatePresence } from "motion/react"
+
+
 
 /* ───────────────── TYPES ───────────────── */
 
@@ -70,10 +74,19 @@ export const GROUP_ICONS: Record<
 };
 
 function GroupIcon({ group }: { group: string }) {
-  const Icon = GROUP_ICONS[group as keyof typeof GROUP_ICONS] ?? Boxes;
-  return <Icon className="h-4 w-4" />;
-}
+  const Icon =
+    GROUP_ANIMATED_ICONS[group as keyof typeof GROUP_ANIMATED_ICONS] ??
+    Boxes;
 
+  return (
+    <span className="flex h-10 w-10 items-center justify-center">
+      <Icon
+        size={20}
+        className="block leading-none"
+      />
+    </span>
+  );
+}
 /* ───────────────── CATEGORY COLORS ───────────────── */
 
 const CATEGORY_DOT_COLORS = [
@@ -149,7 +162,7 @@ export function LeftMenu({ onAddSkill }: Props) {
 
         const normalized =
           json.data?.skills?.map((s) =>
-            toAppSkill(s, { group: openGroup, category: openCat })
+            toAppSkill(s, { group: openGroup!, category: openCat! })
           ) ?? [];
 
         if (!cancelled) setCatSkills(normalized);
@@ -220,7 +233,7 @@ export function LeftMenu({ onAddSkill }: Props) {
     <TooltipProvider delayDuration={120}>
       <div className="h-full flex">
         {/* ICON RAIL */}
-        <div className="w-14 bg-white/50 backdrop-blur-md border border-black/10 rounded-l-xl flex flex-col items-center py-3 gap-2">
+        <div className="p-2 bg-white/50 backdrop-blur-md border border-black/10   flex flex-col items-center py-3 gap-2">
           {GROUPS.map((group) => {
             const active = openGroup === group;
             return (
@@ -232,10 +245,10 @@ export function LeftMenu({ onAddSkill }: Props) {
                       setOpenCat(null);
                     }}
                     className={cn(
-                      "h-10 w-10 rounded-lg flex items-center justify-center transition",
+                      "h-10 w-10  flex items-center justify-center transition",
                       active
-                        ? "bg-black text-white"
-                        : "text-black/50 hover:bg-black/10"
+                        ? "bg-[#00a6fb]/10 rounded-xl backdrop-blur-md text-[#00a6fb]"
+                        : "rounded-xl "
                     )}
                   >
                     <GroupIcon group={group} />
@@ -265,7 +278,7 @@ export function LeftMenu({ onAddSkill }: Props) {
           </div>
 
           {/* CONTENT */}
-          <div className="flex-1 overflow-y-auto px-3 py-2">
+          <div className="flex-1 overflow-y-auto pr-2 py-2">
             {dq ? (
               <div className="space-y-1">
                 {searchLoading && (
@@ -300,8 +313,8 @@ export function LeftMenu({ onAddSkill }: Props) {
                   ))}
               </div>
             ) : (
-              <div className="relative pl-3">
-                {openGroup &&
+<AnimatePresence mode="wait">
+{openGroup &&
                   CATEGORY_TREE[openGroup]?.map((cat) => {
                     const isOpen = openCat === cat;
                     return (
@@ -362,7 +375,7 @@ export function LeftMenu({ onAddSkill }: Props) {
                       </div>
                     );
                   })}
-              </div>
+              </AnimatePresence>
             )}
           </div>
         </div>

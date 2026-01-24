@@ -21,7 +21,7 @@ export const CATEGORY_TREE = {
     "Mobile",
     "Backend",
     "Package & Distribution",
-    "E-commerce Development",
+    "E-commerce",
     "Framework Internals",
   ],
   "Data & AI": ["LLM & AI", "Data Analysis", "Data Engineering", "Machine Learning"],

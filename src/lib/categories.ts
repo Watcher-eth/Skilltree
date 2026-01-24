@@ -33,7 +33,7 @@ export type SkillSubcategory =
   | "Mobile"
   | "Backend"
   | "Package & Distribution"
-  | "E-commerce Development"
+  | "E-commerce"
   | "Framework Internals"
   // Data & AI
   | "LLM & AI"
@@ -113,7 +113,7 @@ export const CATEGORY_TREE: CategoryTree = {
     "Mobile",
     "Backend",
     "Package & Distribution",
-    "E-commerce Development",
+    "E-commerce",
     "Framework Internals",
   ],
   "Data & AI": ["LLM & AI", "Data Analysis", "Data Engineering", "Machine Learning"],
