@@ -5,120 +5,103 @@ import type { CanvasNode } from "./types";
 import { User, Sparkles, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GROUP_COLORS } from "@/lib/categories";
-import React from "react"
+import React from "react";
 
-const W = 260;
-const H = 78;
+export const NODE_SIZE = { w: 260, h: 78 };
 export const PORT_R = 7;
 
 type Props = {
   node: CanvasNode;
   selected?: boolean;
-  onSelect?: (id: string) => void;
+  onSelect?: () => void;
   onMove: (id: string, client: { x: number; y: number }) => void;
+  onMoveEnd?: () => void;
 };
 
-export function SkillNode({ node, onMove, selected = false, onSelect }: Props) {
-  const dragRef = React.useRef<{ active: boolean }>({ active: false });
-
-  const isUser = node.kind === "user";
-  const isHub = node.kind === "hub";
-
-  const Icon = isUser ? User : isHub ? Layers : Sparkles;
-  const group = node.group ?? null;
-  const colors = group ? GROUP_COLORS[group] : null;
-  
-  const badgeClass = isUser
-    ? "bg-blue-100"
-    : colors?.bg ?? "bg-neutral-100";
-  
-  const iconClass = isUser
-    ? "text-blue-700"
-    : colors?.text ?? "text-neutral-700";
-  const title = node.title ?? "";
-  const subtitle = node.subtitle ?? (isUser ? "Root" : isHub ? "Category" : "Skill");
+export function SkillNode({
+  node,
+  selected,
+  onSelect,
+  onMove,
+  onMoveEnd,
+}: Props) {
+  const drag = React.useRef({
+    active: false,
+    lastX: 0,
+    lastY: 0,
+    vx: 0,
+    vy: 0,
+  });
 
   const onPointerDown = (e: React.PointerEvent) => {
-    e.stopPropagation(); // prevent canvas pan
-    if (e.button !== 0) return;
+    e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    dragRef.current.active = true;
-
-    onSelect?.(node.id); // ✅ select on click/drag
-    onMove(node.id, { x: e.clientX, y: e.clientY }); // ✅ let canvas compute grab-offset
+    drag.current.active = true;
+    drag.current.lastX = e.clientX;
+    drag.current.lastY = e.clientY;
+    onSelect?.();
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragRef.current.active) return;
+    if (!drag.current.active) return;
     e.stopPropagation();
+
+    const dx = e.clientX - drag.current.lastX;
+    const dy = e.clientY - drag.current.lastY;
+
+    drag.current.vx = dx;
+    drag.current.vy = dy;
+
+    drag.current.lastX = e.clientX;
+    drag.current.lastY = e.clientY;
+
     onMove(node.id, { x: e.clientX, y: e.clientY });
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
-    dragRef.current.active = false;
+    drag.current.active = false;
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {}
+    onMoveEnd?.();
   };
+
+  const Icon =
+    node.kind === "user" ? User : node.kind === "hub" ? Layers : Sparkles;
+  const colors = node.group ? GROUP_COLORS[node.group] : null;
 
   return (
     <motion.div
       className="absolute select-none"
-      style={{ left: node.x, top: node.y, width: W, height: H }}
-      initial={{ opacity: 0, scale: 0.985 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.16 }}
+      style={{ left: node.x, top: node.y, width: NODE_SIZE.w, height: NODE_SIZE.h }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
     >
-      {/* Ports: edge anchors attach to the CENTER of these circles. */}
-      <div
-        data-port="left"
-        className={cn(
-          "absolute left-[-7px] top-1/2 z-10 -translate-y-1/2 h-[14px] w-[14px] rounded-full bg-white border border-black/10 shadow-sm",
-          selected && "ring-2 ring-black/15"
-        )}
-      />
-      <div
-        data-port="right"
-        className={cn(
-          "absolute right-[-7px] top-1/2 z-10 -translate-y-1/2 h-[14px] w-[14px] rounded-full bg-white border border-black/10 shadow-sm",
-          selected && "ring-2 ring-black/15"
-        )}
-      />
-<div className={cn(
-          "h-full w-full rounded-[23px] bg-white/25 backdrop-blur border border-black/8",
-          "shadow-[0_14px_40px_rgba(0,0,0,0.08)]",
-          "flex items-center gap-3 p-1",
-          selected ? "ring-1 ring-black/9" : "ring-1 ring-black/0"
-        )}>
       <div
         className={cn(
-          "h-full w-full rounded-[18px] bg-white/85 backdrop-blur border border-black/8",
-          "flex items-center gap-3 px-3",
+          "h-full w-full rounded-[22px] bg-white/85 border-[1px]  shadow-[0_14px_40px_rgba(0,0,0,0.08)] flex items-center gap-3 px-3",
+          selected && "ring-1 ring-[#00a6fb]/90"
         )}
       >
-        <div className={cn("h-10 w-10 rounded-[14px] flex items-center justify-center", badgeClass)}>
-          <Icon className={cn("h-5 w-5", iconClass)} />
+        <div
+          className={cn(
+            "h-10 w-10 rounded-[14px] flex items-center justify-center",
+            colors?.bg ?? "bg-neutral-100"
+          )}
+        >
+          <Icon className={cn("h-5 w-5", colors?.text ?? "text-neutral-700")} />
         </div>
 
         <div className="min-w-0">
-          <div className="text-[14px] font-semibold leading-tight truncate">{title}</div>
-          <div className="text-[12px] text-black/45 leading-tight truncate mt-0.5">{subtitle}</div>
+          <div className="text-[14px] font-semibold truncate">
+            {node.title}
+          </div>
+          <div className="text-[12px] text-black/45 truncate">
+            {node.subtitle}
+          </div>
         </div>
-
-        {node.kind === "skill" && node.category ? (
-  <div className="ml-auto">
-    <span className="inline-flex items-center rounded-full border border-black/10 bg-black/[0.03] px-2 py-1 text-[10px] font-semibold text-black/60">
-      {node.category}
-    </span>
-  </div>
-) : null}
-</div>
       </div>
     </motion.div>
   );
 }
-
-export const NODE_SIZE = { w: W, h: H };
