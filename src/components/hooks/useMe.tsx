@@ -10,15 +10,19 @@ export function useMe() {
   const provider = session?.user?.provider;
   const providerAccountId = session?.user?.providerAccountId;
 
+  const shouldQuery = !!(provider && providerAccountId);
+
   const me = useQuery(
     api.users.getMe,
-    provider && providerAccountId
-      ? { provider, providerAccountId }
-      : "skip"
+    shouldQuery ? { provider: provider!, providerAccountId: providerAccountId! } : "skip"
   );
 
+  const isLoading =
+    status === "loading" || (shouldQuery && me === undefined); // ✅ only "loading" if we actually queried
+
   return {
-    me,
-    isLoading: status === "loading" || me === undefined,
+    me: me ?? null, // ✅ unauth => null, not undefined
+    isLoading,
+    status,
   };
 }

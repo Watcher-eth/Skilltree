@@ -33,12 +33,15 @@ function sanitizeNodes(nodes: CanvasNode[]) {
   return nodes.map((n) => {
     const out: any = { ...n };
 
-    // Convex schema expects optional string, not null
     if (out.category == null) delete out.category;
     if (out.subtitle == null) delete out.subtitle;
     if (out.description == null) delete out.description;
     if (out.group == null) delete out.group;
     if (out.skillId == null) delete out.skillId;
+
+    // ✅ NEW
+    if (out.author == null) delete out.author;
+    if (out.githubStars == null) delete out.githubStars;
 
     return out;
   });
@@ -494,17 +497,21 @@ const AUTOSAVE_INTERVAL = 60_000; // 1 minute
         const spotSkill = findFreeSpot(out, desiredSkill, 26);
 
         out.push({
-            id: skillNodeId,
-            kind: "skill",
-            title: s.title,
-            subtitle: s.group,        // optional, but nice
-            description: s.description ?? `Learn ${s.title}.`,
-            skillId: s.id,
-            group: s.group,           // ✅ REQUIRED for colors
-            category: s.category,     // ✅ only shown on skill
-            x: spotSkill.x,
-            y: spotSkill.y,
-          });
+          id: skillNodeId,
+          kind: "skill",
+          title: s.title,
+          subtitle: s.group,
+          description: s.description ?? `Learn ${s.title}.`,
+          skillId: s.id,
+          group: s.group,
+          category: s.category,
+        
+          author: s.author ?? null,
+          githubStars: typeof s.githubStars === "number" ? s.githubStars : null,
+        
+          x: spotSkill.x,
+          y: spotSkill.y,
+        });
 
         return out;
       });

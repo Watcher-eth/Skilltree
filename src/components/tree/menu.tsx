@@ -79,10 +79,10 @@ function GroupIcon({ group }: { group: string }) {
     Boxes;
 
   return (
-    <span className="flex h-10 w-10 items-center justify-center">
+    <span className="flex hover:scale-110 transition-all h-10 w-10 items-center justify-center">
       <Icon
         size={20}
-        className="block leading-none"
+        className="block color-gray-500 leading-none"
       />
     </span>
   );
@@ -233,7 +233,7 @@ export function LeftMenu({ onAddSkill }: Props) {
     <TooltipProvider delayDuration={120}>
       <div className="h-full flex">
         {/* ICON RAIL */}
-        <div className="p-2 bg-white/50 backdrop-blur-md border border-black/10   flex flex-col items-center py-3 gap-2">
+        <div className="p-2 bg-white/90 backdrop-blur-md  border-r border-gray-100  flex flex-col items-center py-3 gap-2">
           {GROUPS.map((group) => {
             const active = openGroup === group;
             return (
@@ -261,9 +261,9 @@ export function LeftMenu({ onAddSkill }: Props) {
         </div>
 
         {/* MAIN PANEL */}
-        <div className="w-[260px] bg-white/60 backdrop-blur-md border border-l-0 border-black/10 rounded-r-xl overflow-hidden flex flex-col">
+        <div className="w-[260px] bg-white/60 backdrop-blur-md rounded-r-xl overflow-hidden flex flex-col">
           {/* HEADER */}
-          <div className="px-4 pt-3 pb-3 border-b border-black/10">
+          <div className="px-4 pt-3 pb-3 border-b border-gray-100">
             <div className="text-[12px] text-black/50">Builder</div>
 
             <div className="mt-3 flex items-center gap-2 rounded-md bg-black/[0.06] px-3 py-2">
@@ -319,15 +319,13 @@ export function LeftMenu({ onAddSkill }: Props) {
                     const isOpen = openCat === cat;
                     return (
                       <div key={cat} className="relative mb-2">
-                        {isOpen && (
-                          <div className="absolute left-[10px] top-[22px] bottom-2 w-px bg-black/10" />
-                        )}
+                       
 
                         <button
                           onClick={() =>
                             setOpenCat(isOpen ? null : (cat as SkillCategory))
                           }
-                          className="flex items-center gap-2 text-[13px] font-medium px-2 py-1 rounded hover:bg-black/[0.06]"
+                          className="flex items-center gap-2 text-[13px] font-medium px-4 py-1 rounded hover:scale-102 transition-all"
                         >
                           <span
                             className={cn(

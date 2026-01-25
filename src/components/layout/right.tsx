@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import type { CanvasNode } from "@/components/tree/types";
 import { Copy, TerminalSquare } from "lucide-react";
 import { showCopiedToast } from "@/lib/toast";
@@ -42,14 +41,24 @@ export function RightInspector({ node }: { node: CanvasNode }) {
 
       <div className="p-4 space-y-3">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-black/40">
-            Category
-          </div>
-          <div className="mt-1 text-[13px] text-black/70">
-            {node.category ?? "—"}
-          </div>
-        </div>
+  <div className="text-[11px] font-semibold uppercase tracking-wider text-black/40">
+    Author
+  </div>
+  <div className="mt-1 text-[13px] text-black/70">
+    {node.kind === "skill" ? (node.author ?? "—") : "—"}
+  </div>
+</div>
 
+<div>
+  <div className="text-[11px] font-semibold uppercase tracking-wider text-black/40">
+    GitHub Stars
+  </div>
+  <div className="mt-1 text-[13px] text-black/70">
+    {node.kind === "skill"
+      ? (typeof node.githubStars === "number" ? node.githubStars.toLocaleString() : "—")
+      : "—"}
+  </div>
+</div>
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-wider text-black/40">
             Description

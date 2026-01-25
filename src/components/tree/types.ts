@@ -14,7 +14,9 @@ export type SkillCategory =
     id: string;
     title: string;
     description?: string;
-  
+    author?: string;        // ✅ NEW
+  githubStars?: number;   // ✅ NEW
+
     group: SkillGroup;           // REQUIRED
     category: SkillSubcategory;  // REQUIRED (subcategory)
   };
@@ -35,6 +37,10 @@ export type CanvasNode = {
   // semantics:
   group?: SkillGroup | null;           // hubs + skills
   category?: SkillSubcategory | null;  // ONLY skills
+
+  author?: string | null;       // ✅ NEW (only skills)
+  githubStars?: number | null;  // ✅ NEW (only skills)
+
 
   x: number;
   y: number;
