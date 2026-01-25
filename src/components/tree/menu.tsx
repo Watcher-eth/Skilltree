@@ -264,7 +264,7 @@ export function LeftMenu({ onAddSkill }: Props) {
         <div className="w-[260px] bg-white/60 backdrop-blur-md rounded-r-xl overflow-hidden flex flex-col">
           {/* HEADER */}
           <div className="px-4 pt-3 pb-3 border-b border-gray-100">
-            <div className="text-[12px] text-black/50">Builder</div>
+            <div className="text-[12px] text-black/50">{openGroup}</div>
 
             <div className="mt-3 flex items-center gap-2 rounded-md bg-black/[0.06] px-3 py-2">
               <Search className="h-4 w-4 text-black/40" />

@@ -104,7 +104,6 @@ export const SUBCATEGORY_ANIMATED_ICONS: Record<
   "Business Apps": LayersIcon,
   "Real Estate & Legal": Scale,
   Payment: DollarSignIcon,
-  "E-commerce": ShoppingCart,
 
   /* ───── DevOps ───── */
   "CI/CD": ActivityIcon,

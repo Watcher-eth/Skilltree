@@ -4,7 +4,7 @@ import * as React from "react";
 import { nanoid } from "nanoid";
 import type { CanvasEdge, CanvasNode, Skill } from "./types";
 import { LeftMenu } from "./menu";
-import { Canvas } from "./Canvas";
+import { Canvas, CanvasHandle } from "./Canvas";
 import { TopBar } from "@/components/layout/top";
 import { BottomBar } from "@/components/layout/bottom";
 import { NODE_SIZE, PORT_R } from "./Node";
@@ -231,8 +231,9 @@ export function SkillTreeBuilder({
   const [isSaving, setIsSaving] = React.useState(false);
   const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
 
-  const autosaveTimer = React.useRef<number | null>(null);
-  const hasHydrated = React.useRef(false);
+  const canvasRef = React.useRef<CanvasHandle | null>(null);
+    const hasHydrated = React.useRef(false);
+    const pendingFlyToId = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     hasHydrated.current = true;
@@ -425,104 +426,100 @@ const AUTOSAVE_INTERVAL = 60_000; // 1 minute
     void onSave();
   }, [nodes, edges, treeName, treeId]);
   
-  const onAddSkill = React.useCallback(
-    (s: Skill) => {
-      commit("add-skill");
-
+  const onAddSkill = React.useCallback((s: Skill) => {
+    commit("add-skill");
+  
+    // ✅ generate once, outside setNodes (StrictMode-safe)
+    const skillNodeId = `skill-${s.id}-${nanoid(6)}`;
+    pendingFlyToId.current = skillNodeId;
+  
+    setNodes((prev) => {
+      const out = [...prev];
+  
       const userId = "user-root";
-      setNodes((prev) => {
-        const out = [...prev];
-
-        const user = out.find((n) => n.id === userId) ?? null;
-        const ux = user?.x ?? 0;
-        const uy = user?.y ?? 0;
-
-        const hid = hubId(s.group as SkillGroup);
-        
-        let hub = out.find(
-          (n) => n.kind === "hub" && n.group === s.group
-        ) ?? null;
-        
-        if (!hub) {
-          const hubs = out.filter((n) => n.kind === "hub");
-          const uC = centerOf(user!);
-        
-          const usedAngles = hubs.map((h) => {
-            const hc = centerOf(h);
-            return Math.atan2(hc.y - uC.y, hc.x - uC.x);
-          });
-        
-          const angle = wedgeAngleForCategory(s.group, usedAngles);
-          const radius = 380 + hubs.length * 120;
-        
-          const desiredHub = polar(uC, angle, radius);
-          const spotHub = findFreeSpot(out, desiredHub, 32);
-        
-          hub = {
-            id: hid,
-            kind: "hub",
-            title: s.group,
-            subtitle: "Group",
-            group: s.group,
-            category: null,
-            x: spotHub.x,
-            y: spotHub.y,
-          };
-        
-          out.push(hub);
-        }
-        // Place skill outward along hub "lane"
-        const existingSkills = out.filter((n) => n.kind === "skill" && n.category === s.category);
-        const idx = existingSkills.length;
-
-        const skillNodeId = `skill-${s.id}-${nanoid(6)}`;
-
-        const uC = { x: ux + NODE_SIZE.w / 2, y: uy + NODE_SIZE.h / 2 };
-        const hC = centerOf(hub as CanvasNode);
-
-        const laneAngle = Math.atan2(hC.y - uC.y, hC.x - uC.x);
-        const outward = 260 + idx * 170;
-
-        const side = idx % 2 === 0 ? 1 : -1;
-        const perpUnit = { x: Math.cos(laneAngle + Math.PI / 2), y: Math.sin(laneAngle + Math.PI / 2) };
-        const perpMag = side * (90 + Math.floor(idx / 2) * 22);
-
-        const along = polar({ x: hub?.x ?? 0, y: hub?.y ?? 0 }, laneAngle, outward);
-
-        const desiredSkill = {
-          x: along.x + perpUnit.x * perpMag,
-          y: along.y + perpUnit.y * perpMag,
-        };
-
-        const spotSkill = findFreeSpot(out, desiredSkill, 26);
-
-        out.push({
-          id: skillNodeId,
-          kind: "skill",
-          title: s.title,
-          subtitle: s.group,
-          description: s.description ?? `Learn ${s.title}.`,
-          skillId: s.id,
-          group: s.group,
-          category: s.category,
-        
-          author: s.author ?? null,
-          githubStars: typeof s.githubStars === "number" ? s.githubStars : null,
-        
-          x: spotSkill.x,
-          y: spotSkill.y,
+      const user = out.find((n) => n.id === userId) ?? null;
+      const ux = user?.x ?? 0;
+      const uy = user?.y ?? 0;
+  
+      const hid = hubId(s.group as SkillGroup);
+  
+      let hub =
+        out.find((n) => n.kind === "hub" && n.group === s.group) ?? null;
+  
+      if (!hub) {
+        const hubs = out.filter((n) => n.kind === "hub");
+        const uC = centerOf(user!);
+  
+        const usedAngles = hubs.map((h) => {
+          const hc = centerOf(h);
+          return Math.atan2(hc.y - uC.y, hc.x - uC.x);
         });
-
-        return out;
+  
+        const angle = wedgeAngleForCategory(s.group, usedAngles);
+        const radius = 380 + hubs.length * 120;
+  
+        const desiredHub = polar(uC, angle, radius);
+        const spotHub = findFreeSpot(out, desiredHub, 32);
+  
+        hub = {
+          id: hid,
+          kind: "hub",
+          title: s.group,
+          subtitle: "Group",
+          group: s.group,
+          category: null,
+          x: spotHub.x,
+          y: spotHub.y,
+        };
+  
+        out.push(hub);
+      }
+  
+      const existingSkills = out.filter(
+        (n) => n.kind === "skill" && n.category === s.category
+      );
+      const idx = existingSkills.length;
+  
+      const uC = { x: ux + NODE_SIZE.w / 2, y: uy + NODE_SIZE.h / 2 };
+      const hC = centerOf(hub as CanvasNode);
+  
+      const laneAngle = Math.atan2(hC.y - uC.y, hC.x - uC.x);
+      const outward = 260 + idx * 170;
+  
+      const side = idx % 2 === 0 ? 1 : -1;
+      const perpUnit = {
+        x: Math.cos(laneAngle + Math.PI / 2),
+        y: Math.sin(laneAngle + Math.PI / 2),
+      };
+      const perpMag = side * (90 + Math.floor(idx / 2) * 22);
+  
+      const along = polar({ x: hub.x, y: hub.y }, laneAngle, outward);
+  
+      const desiredSkill = {
+        x: along.x + perpUnit.x * perpMag,
+        y: along.y + perpUnit.y * perpMag,
+      };
+  
+      const spotSkill = findFreeSpot(out, desiredSkill, 26);
+  
+      out.push({
+        id: skillNodeId, // ✅ use stable id
+        kind: "skill",
+        title: s.title,
+        subtitle: s.group,
+        description: s.description ?? `Learn ${s.title}.`,
+        skillId: s.id,
+        group: s.group,
+        category: s.category,
+        author: s.author ?? null,
+        githubStars: typeof s.githubStars === "number" ? s.githubStars : null,
+        x: spotSkill.x,
+        y: spotSkill.y,
       });
-
-      // Selection: pick the newest one (we select after nodes update)
-      // We'll do it in a microtask to wait for state update
-      queueMicrotask(() => setSelectedId((prevSel) => prevSel)); // no-op; keep behavior stable
-    },
-    [commit]
-  );
-
+  
+      return out;
+    });
+  }, [commit]);
     //cmd + s
     React.useEffect(() => {
       const onKeyDown = (e: KeyboardEvent) => {
@@ -557,6 +554,21 @@ const AUTOSAVE_INTERVAL = 60_000; // 1 minute
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [undo, redo, deleteSelected]);
 
+
+
+  React.useEffect(() => {
+    const id = pendingFlyToId.current;
+    if (!id) return;
+  
+    const exists = nodes.some((n) => n.id === id);
+    if (!exists) return; // with the fix above, this should now work reliably
+  
+    pendingFlyToId.current = null;
+    canvasRef.current?.flyToNode(id, { zoom: 1, durationMs: 520 });
+    setSelectedId(id);
+  }, [nodes]);
+
+  
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#f4f4f3]">
 <TopBar
@@ -582,13 +594,14 @@ const AUTOSAVE_INTERVAL = 60_000; // 1 minute
 />
 <SkillTreeSidebar onAddSkill={onAddSkill} />
 
-      <Canvas
-        nodes={nodes}
-        edges={edges}
-        selectedId={selectedId}
-        onSelectNode={(id) => setSelectedId(id)}
-        onMoveNode={onMoveNodeWorld}
-      />
+<Canvas
+  ref={canvasRef}
+  nodes={nodes}
+  edges={edges}
+  selectedId={selectedId}
+  onSelectNode={(id) => setSelectedId(id)}
+  onMoveNode={onMoveNodeWorld}
+/>
 
       <BottomBar
         canUndo={canUndo}

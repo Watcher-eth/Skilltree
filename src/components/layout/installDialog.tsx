@@ -55,7 +55,7 @@ export function InstallSkillsDialog({
   );
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-[420px] rounded-xl border-0 bg-white  p-0 shadow-2xl">
+      <DialogContent className="w-full max-w-[420px] rounded-xl border-0 bg-white   p-0 shadow-2xl">
         {/* TOP */}
         <div className="p-5 pb-3 max-w-[420px]">
           {/* Icon */}
@@ -125,7 +125,7 @@ export function InstallSkillsDialog({
         </div>
 
         {/* BOTTOM TRAY */}
-        <div style={{ maxWidth: "420px", borderRadius: "0 0 16px 16px" }} className="flex items-center justify-between rounded-b-2xl border-t border-gray-100 bg-gray-50 px-5 py-4">
+        <div style={{ maxWidth: "420px", borderRadius: "0 0 16px 16px" }} className="flex rounded-t-2xl items-center justify-between rounded-b-2xl border-t border-gray-100 bg-gray-50 px-5 py-4">
           <button
             onClick={() => onOpenChange(false)}
             className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-100"
