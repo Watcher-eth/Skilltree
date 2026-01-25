@@ -20,6 +20,7 @@ export default function EditSkillTreePage(props: Props) {
       initialTree={props.tree}
       initialSnapshot={props.snapshot}
       username={me?.name}
+      userId={me?._id}
     />
   );
 }

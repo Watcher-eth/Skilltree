@@ -1,8 +1,9 @@
 "use client";
 
-import * as React from "react";
-import { Settings, Code2, Download } from "lucide-react";
+import {  Download } from "lucide-react";
 import SkillSettingsMenu from "../tree/settingsDialog"
+import { darken, hashToIndex, lighten, TREE_COLORS } from "../profile/trees"
+import Link from "next/link"
 
 type Props = {
   treeName: string;
@@ -12,6 +13,7 @@ type Props = {
   saving?: boolean;
   lastSavedAt?: number | null;
   username?: string; 
+  userId?: string;
   onOpenInstall: () => void;
 
 };
@@ -23,8 +25,13 @@ export function TopBar({
   onOpenCode,
   onOpenInstall,
   saving, 
+  userId,
 username  
 }: Props) {
+
+  const base = TREE_COLORS[hashToIndex(username ?? "anon", TREE_COLORS.length)];
+  const hi = lighten(base, 0.28);
+  const lo = darken(base, 0.22);
   return (
     <div className="fixed top-6 left-1/2 right-6 z-40 pointer-events-none">
       <div className="pointer-events-auto flex items-center justify-between">
@@ -43,6 +50,16 @@ username
           </button> */}
 
           <div className="h-8 w-8 flex items-center justify-center">
+            
+            
+              <Link
+              href={"/u/" + userId}
+              className="w-6 h-6 rounded-full shrink-0 "
+              style={{
+                background: `radial-gradient(120% 120% at 30% 25%, ${hi} 0%, ${base} 45%, ${lo} 100%)`,
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.35)",
+              }}
+            />
   <SkillSettingsMenu />
 </div>
 

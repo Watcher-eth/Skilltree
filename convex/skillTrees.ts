@@ -176,3 +176,29 @@ export const getMyLatest = query({
       .first();
   },
 });
+
+export const listPublicByOwner = query({
+  args: {
+    ownerId: v.id("users"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, { ownerId, limit }) => {
+    const rows = await ctx.db
+      .query("skillTrees")
+      .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
+      .order("desc")
+      .take(limit ?? 50);
+
+    return rows
+      .filter((t) => t.isPublic)
+      .map((t) => ({
+        _id: t._id,
+        title: t.title,
+        slug: t.slug,
+        nodeCount: t.nodeCount,
+        edgeCount: t.edgeCount,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+      }));
+  },
+});

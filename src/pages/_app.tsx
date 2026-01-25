@@ -15,11 +15,13 @@ export default function App({ Component, pageProps }: AppProps) {
     <ConvexProvider client={convex}>
       <SidebarProvider>
     <SkillSettingsProvider>
-      <Component {...pageProps} />
+    <body className={`font-sans antialiased`}>
+    <Component {...pageProps} />
       <Toaster
   position="top-center"
   duration={2200}
 />
+</body>
     </SkillSettingsProvider>
     </SidebarProvider>
     </ConvexProvider>

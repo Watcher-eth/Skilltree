@@ -200,10 +200,12 @@ export function SkillTreeBuilder({
   initialTree,
   initialSnapshot,
   username,
+  userId,
 }: {
   initialTree?: InitialTree;
   initialSnapshot?: InitialSnapshot;
   username?: string;
+  userId?: string;
 }) {  
   const [treeId, setTreeId] = React.useState<Id<"skillTrees"> | null>(
     initialTree?._id ?? null
@@ -568,7 +570,7 @@ const AUTOSAVE_INTERVAL = 60_000; // 1 minute
     setSelectedId(id);
   }, [nodes]);
 
-  
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#f4f4f3]">
 <TopBar
@@ -583,6 +585,7 @@ const AUTOSAVE_INTERVAL = 60_000; // 1 minute
   saving={isSaving}
   lastSavedAt={lastSavedAt}
   username={username}
+  userId={userId}
 
 />
 <CodeViewerDialog

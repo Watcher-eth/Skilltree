@@ -53,15 +53,31 @@ export default defineSchema({
 
   // if you don’t have users yet, you can delete this table,
   // but leaving it here is fine if you reference ownerId later.
-  users: defineTable({
-    provider: v.string(),
-    providerAccountId: v.string(),
-    email: v.optional(v.string()),
-    name: v.string(),
-    avatar: v.string(),
-    createdAt: v.number(),
-    onboarded: v.boolean()
-  })
-    .index("by_provider", ["provider", "providerAccountId"]),
+
+    users: defineTable({
+      provider: v.string(),
+      providerAccountId: v.string(),
+      email: v.optional(v.string()),
+      name: v.string(),
+      avatar: v.string(),
+      createdAt: v.number(),
+      onboarded: v.boolean(),
+    
+      // ✅ new: public profile url: /u/[handle]
+      handle: v.optional(v.string()),
+    })
+      .index("by_provider", ["provider", "providerAccountId"])
+      .index("by_handle", ["handle"]),
+    
+    
+    // OPTIONAL (for following tab to actually show something)
+    follows: defineTable({
+      followerId: v.id("users"),
+      followingId: v.id("users"),
+      createdAt: v.number(),
+    })
+      .index("by_follower", ["followerId", "createdAt"])
+      .index("by_pair", ["followerId", "followingId"]),
 
 });
+

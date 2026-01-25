@@ -38,7 +38,7 @@ export default function AppRoot() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#f4f4f3]">
-      <SkillTreeBuilder username={me?.name} />
+      <SkillTreeBuilder username={me?.name} userId={me?._id} />
 
       <AnimatePresence>
         {showIntro && (

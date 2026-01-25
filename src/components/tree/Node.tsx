@@ -25,7 +25,7 @@ type Props = {
 const IOS_BLUE = "#00a6fb";
 
 // Your palette (+ white)
-const PALETTE = {
+export const PALETTE = {
   a: "#00BBA6",
   b: "#00A8EF",
   c: "#FF6800",
