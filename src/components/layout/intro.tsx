@@ -241,9 +241,11 @@ function PrimaryButton({
 function SecondaryButton({
   children,
   onClick,
+  icon,
 }: {
   children: React.ReactNode;
   onClick: () => void;
+  icon?: string;
 }) {
   return (
     <button
@@ -258,6 +260,7 @@ function SecondaryButton({
         "focus:outline-none focus-visible:shadow-[0_0_0_4px_rgba(10,132,255,0.20)]",
       ].join(" ")}
     >
+      {icon && <img src={icon} alt="" className="w-5 h-5" />}
       {children}
     </button>
   );
@@ -385,8 +388,8 @@ function AuthStep({
 
       <div className={`w-full ${UI.maxW}`}>
         <div className="grid gap-4">
-          <SecondaryButton onClick={() => signIn("github")}>Continue with GitHub</SecondaryButton>
-          <SecondaryButton onClick={() => signIn("google")}>Continue with Google</SecondaryButton>
+          <SecondaryButton icon="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg" onClick={() => signIn("github")}>Continue with GitHub</SecondaryButton>
+          <SecondaryButton icon="https://www.citypng.com/public/uploads/preview/google-logo-icon-gsuite-hd-701751694791470gzbayltphh.png" onClick={() => signIn("google")}>Continue with Google</SecondaryButton>
         </div>
 
         <div className="mt-6 flex items-center justify-center">
