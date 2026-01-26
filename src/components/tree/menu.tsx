@@ -32,8 +32,6 @@ import { toAppSkill } from "@/lib/normalize";
 import { GROUP_ANIMATED_ICONS } from "./categoryIcons";
 import { AnimatePresence } from "motion/react"
 
-
-
 /* ───────────────── TYPES ───────────────── */
 
 type Props = {
@@ -161,10 +159,20 @@ export function LeftMenu({ onAddSkill }: Props) {
           throw new Error(json.error ?? "Failed");
 
         const normalized =
-          json.data?.skills?.map((s) =>
-            toAppSkill(s, { group: openGroup!, category: openCat! })
-          ) ?? [];
-
+        json.data?.skills?.map((raw) => {
+          const s = toAppSkill(raw as any, { group: openGroup!, category: openCat! });
+          console.log("category fetch", s);
+console.log("category fetch", normalized);
+          return {
+            ...s,
+            // harden the fields you render
+            title: typeof (s as any).title === "string" ? (s as any).title : String((s as any).title ?? (raw as any).name ?? ""),
+            description:
+              typeof (s as any).description === "string"
+                ? (s as any).description
+                : String((s as any).description ?? ""),
+          } as Skill;
+        }) ?? [];
         if (!cancelled) setCatSkills(normalized);
       } catch (e: any) {
         if (!cancelled) setCatError(e.message);
@@ -206,11 +214,21 @@ export function LeftMenu({ onAddSkill }: Props) {
           throw new Error(json.error ?? "Search failed");
 
         const normalized =
-          json.data?.skills?.map((s) =>
-            toAppSkill(s, openGroup && openCat
-              ? { group: openGroup, category: openCat }
-              : undefined)
-          ) ?? [];
+        json.data?.skills?.map((raw) => {
+          const s = toAppSkill(
+            raw as any,
+            openGroup && openCat ? { group: openGroup, category: openCat } : undefined
+          );
+      
+          return {
+            ...s,
+            title: typeof (s as any).title === "string" ? (s as any).title : String((s as any).title ?? (raw as any).name ?? ""),
+            description:
+              typeof (s as any).description === "string"
+                ? (s as any).description
+                : String((s as any).description ?? ""),
+          } as Skill;
+        }) ?? [];
 
         if (!cancelled) setSearchResults(normalized);
       } catch (e: any) {
@@ -228,7 +246,6 @@ export function LeftMenu({ onAddSkill }: Props) {
   }, [dq, openGroup, openCat]);
 
   /* ───────────────── RENDER ───────────────── */
-
   return (
     <TooltipProvider delayDuration={120}>
       <div className="h-full flex">

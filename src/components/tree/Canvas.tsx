@@ -1,6 +1,7 @@
+// Canvas.tsx
 "use client";
 
-import React from "react";
+import * as React from "react";
 import { motion } from "motion/react";
 import type { CanvasEdge, CanvasNode } from "./types";
 import { SkillNode, NODE_SIZE } from "./Node";
@@ -35,6 +36,11 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
 ) {
   const rootRef = React.useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = React.useState<Viewport>({ x: 0, y: 0, z: 1 });
+  const vpRef = React.useRef(vp);
+  React.useEffect(() => {
+    vpRef.current = vp;
+  }, [vp]);
+
   const [guide, setGuide] = React.useState<Guide | null>(null);
 
   const panRef = React.useRef({
@@ -47,17 +53,15 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
 
   const flyAnimRef = React.useRef<number | null>(null);
 
-  const screenToWorld = React.useCallback(
-    (sx: number, sy: number) => {
-      const r = rootRef.current?.getBoundingClientRect();
-      if (!r) return { x: sx, y: sy };
-      return {
-        x: (sx - r.left - vp.x) / vp.z,
-        y: (sy - r.top - vp.y) / vp.z,
-      };
-    },
-    [vp]
-  );
+  const screenToWorld = React.useCallback((sx: number, sy: number) => {
+    const r = rootRef.current?.getBoundingClientRect();
+    if (!r) return { x: sx, y: sy };
+    const v = vpRef.current;
+    return {
+      x: (sx - r.left - v.x) / v.z,
+      y: (sy - r.top - v.y) / v.z,
+    };
+  }, []);
 
   // Center on mount
   React.useEffect(() => {
@@ -66,14 +70,14 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
     setVp({ x: r.width * 0.5, y: r.height * 0.55, z: 1 });
   }, []);
 
-  // Zoom
+  // Wheel (bind once; use refs)
   React.useEffect(() => {
     const el = rootRef.current;
     if (!el || readOnly) return;
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (e.ctrlKey) e.preventDefault();
+      const v = vpRef.current;
 
       const r = el.getBoundingClientRect();
       const mx = e.clientX - r.left;
@@ -81,10 +85,10 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
 
       const delta = -e.deltaY;
       const zoom = delta > 0 ? 1.08 : 1 / 1.08;
-      const nextZ = clamp(vp.z * zoom, 0.35, 2.25);
+      const nextZ = clamp(v.z * zoom, 0.35, 2.25);
 
-      const wx = (mx - vp.x) / vp.z;
-      const wy = (my - vp.y) / vp.z;
+      const wx = (mx - v.x) / v.z;
+      const wy = (my - v.y) / v.z;
 
       setVp({
         x: mx - wx * nextZ,
@@ -95,18 +99,19 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
 
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [vp, readOnly]);
+  }, [readOnly]);
 
-  // Pan
+  // Pan background
   const onPointerDownBg = (e: React.PointerEvent) => {
     if (readOnly || e.button !== 0) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const v = vpRef.current;
     panRef.current = {
       active: true,
       startX: e.clientX,
       startY: e.clientY,
-      baseX: vp.x,
-      baseY: vp.y,
+      baseX: v.x,
+      baseY: v.y,
     };
     onSelectNode(null);
   };
@@ -124,75 +129,118 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
     panRef.current.active = false;
   };
 
-  // Snapping
-  const applySnapping = (id: string, pos: { x: number; y: number }) => {
-    let snapX: number | undefined;
-    let snapY: number | undefined;
+  // Snapping (O(N) but ok; avoid setGuide if unchanged)
+  const applySnapping = React.useCallback(
+    (id: string, pos: { x: number; y: number }) => {
+      let snapX: number | undefined;
+      let snapY: number | undefined;
 
-    for (const n of nodes) {
-      if (n.id === id) continue;
-      if (Math.abs(n.x - pos.x) < SNAP_DIST) snapX = n.x;
-      if (Math.abs(n.y - pos.y) < SNAP_DIST) snapY = n.y;
-    }
+      for (const n of nodes) {
+        if (n.id === id) continue;
+        if (Math.abs(n.x - pos.x) < SNAP_DIST) snapX = n.x;
+        if (Math.abs(n.y - pos.y) < SNAP_DIST) snapY = n.y;
+      }
 
-    setGuide(snapX || snapY ? { x: snapX, y: snapY } : null);
+      const nextGuide = snapX || snapY ? { x: snapX, y: snapY } : null;
+      setGuide((g) => {
+        const gx = g?.x, gy = g?.y;
+        const nx = nextGuide?.x, ny = nextGuide?.y;
+        if (gx === nx && gy === ny) return g;
+        return nextGuide;
+      });
 
-    return { x: snapX ?? pos.x, y: snapY ?? pos.y };
-  };
-
-  // ✅ Fly-to imperative API
-  React.useImperativeHandle(ref, () => ({
-    flyToNode: (id, opts) => {
-      const el = rootRef.current;
-      if (!el) return;
-
-      const n = nodes.find((x) => x.id === id);
-      if (!n) return;
-
-      const pad = opts?.pad ?? 120;
-      const durationMs = opts?.durationMs ?? 420;
-
-      const r = el.getBoundingClientRect();
-      const cx = r.width / 2;
-      const cy = r.height / 2;
-
-      // target zoom: either provided or auto (keep current)
-      const targetZ = clamp(opts?.zoom ?? vp.z, 0.35, 2.25);
-
-      // center node in screen: vp.x + (nodeCenterX)*z = cx  => vp.x = cx - nodeCenterX*z
-      const nodeCenterX = n.x + NODE_SIZE.w / 2;
-      const nodeCenterY = n.y + NODE_SIZE.h / 2;
-
-      // optional: ensure node isn't near edge by shifting toward center
-      // (pad is mostly useful if you later implement fit-to-rect; kept for future use)
-      void pad;
-
-      const from = { ...vp };
-      const to = {
-        x: cx - nodeCenterX * targetZ,
-        y: cy - nodeCenterY * targetZ,
-        z: targetZ,
-      };
-
-      if (flyAnimRef.current) cancelAnimationFrame(flyAnimRef.current);
-
-      const t0 = performance.now();
-      const tick = (now: number) => {
-        const t = clamp((now - t0) / durationMs, 0, 1);
-        const k = easeOutCubic(t);
-
-        setVp({
-          x: from.x + (to.x - from.x) * k,
-          y: from.y + (to.y - from.y) * k,
-          z: from.z + (to.z - from.z) * k,
-        });
-
-        if (t < 1) flyAnimRef.current = requestAnimationFrame(tick);
-      };
-
-      flyAnimRef.current = requestAnimationFrame(tick);
+      return { x: snapX ?? pos.x, y: snapY ?? pos.y };
     },
-  }), [nodes, vp]);
+    [nodes]
+  );
+
+  // rAF throttle node moves
+  const moveRaf = React.useRef<number | null>(null);
+  const pendingMove = React.useRef<{ id: string; world: { x: number; y: number } } | null>(null);
+
+  const onMoveNodeClient = React.useCallback(
+    (id: string, client: { x: number; y: number }) => {
+      if (readOnly) return;
+
+      const w = screenToWorld(client.x, client.y);
+      const snapped = applySnapping(id, w);
+
+      pendingMove.current = { id, world: snapped };
+
+      if (moveRaf.current) return;
+      moveRaf.current = requestAnimationFrame(() => {
+        moveRaf.current = null;
+        const p = pendingMove.current;
+        if (!p) return;
+        onMoveNode(p.id, p.world);
+      });
+    },
+    [applySnapping, onMoveNode, readOnly, screenToWorld]
+  );
+
+  const onMoveEnd = React.useCallback(() => setGuide(null), []);
+
+  const onSelectNodeId = React.useCallback(
+    (id: string) => {
+      if (readOnly) return;
+      onSelectNode(id);
+    },
+    [onSelectNode, readOnly]
+  );
+
+  // Fly-to API unchanged (but use vpRef inside)
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      flyToNode: (id, opts) => {
+        const el = rootRef.current;
+        if (!el) return;
+
+        const n = nodes.find((x) => x.id === id);
+        if (!n) return;
+
+        const durationMs = opts?.durationMs ?? 420;
+
+        const r = el.getBoundingClientRect();
+        const cx = r.width / 2;
+        const cy = r.height / 2;
+
+        const from = { ...vpRef.current };
+        const targetZ = clamp(opts?.zoom ?? from.z, 0.35, 2.25);
+
+        const nodeCenterX = n.x + NODE_SIZE.w / 2;
+        const nodeCenterY = n.y + NODE_SIZE.h / 2;
+
+        const to = {
+          x: cx - nodeCenterX * targetZ,
+          y: cy - nodeCenterY * targetZ,
+          z: targetZ,
+        };
+
+        if (flyAnimRef.current) cancelAnimationFrame(flyAnimRef.current);
+
+        const t0 = performance.now();
+        const tick = (now: number) => {
+          const t = clamp((now - t0) / durationMs, 0, 1);
+          const k = easeOutCubic(t);
+
+          const next = {
+            x: from.x + (to.x - from.x) * k,
+            y: from.y + (to.y - from.y) * k,
+            z: from.z + (to.z - from.z) * k,
+          };
+
+          vpRef.current = next;
+          setVp(next);
+
+          if (t < 1) flyAnimRef.current = requestAnimationFrame(tick);
+        };
+
+        flyAnimRef.current = requestAnimationFrame(tick);
+      },
+    }),
+    [nodes]
+  );
 
   return (
     <div
@@ -200,7 +248,6 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
       className="fixed inset-0 overflow-hidden bg-[#fefefe]"
       style={{ touchAction: "none" }}
     >
-      {/* dots */}
       <div
         className="absolute inset-0"
         style={{
@@ -209,8 +256,6 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
           backgroundSize: "22px 22px",
         }}
       />
-
-      {/* grid */}
       <div
         className="absolute inset-0 opacity-[0.25]"
         style={{
@@ -222,7 +267,6 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
         }}
       />
 
-      {/* guides */}
       {guide?.x !== undefined && (
         <div
           className="absolute inset-y-0 w-px bg-blue-400/40 pointer-events-none"
@@ -256,20 +300,15 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
               key={n.id}
               node={n}
               selected={selectedId === n.id}
-              onSelect={() => !readOnly && onSelectNode(n.id)}
-              onMove={(id, pt) => {
-                if (readOnly) return;
-                const w = screenToWorld(pt.x, pt.y);
-                const snapped = applySnapping(id, w);
-                onMoveNode(id, snapped);
-              }}
-              onMoveEnd={() => setGuide(null)}
+              readOnly={readOnly}
+              onSelectNode={onSelectNodeId}
+              onMoveNode={onMoveNodeClient}
+              onMoveEnd={onMoveEnd}
             />
           ))}
         </div>
       </div>
 
-      {/* fades */}
       <motion.div
         className="pointer-events-none fixed inset-x-0 top-0 h-24 z-10"
         style={{

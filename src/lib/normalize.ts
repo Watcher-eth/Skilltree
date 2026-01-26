@@ -54,21 +54,19 @@ export function inferGroupAndCategory(input: SkillsMpSkill): { group: SkillGroup
   return { group: best.group, category: best.category };
 }
 
-export function toAppSkill(
-  s: SkillsMpSkill,
-  fallback?: { group: SkillGroup; category: SkillCategory }
-): Skill {
-  const inferred = inferGroupAndCategory(s) ?? fallback;
 
+export function toAppSkill(
+  raw: any,
+  ctx?: { group: string; category: string }
+): Skill {
   return {
-    id: s.id,
-    title: s.name,
-    description: s.description ?? "",
-    group: inferred?.group ?? (fallback?.group as any),
-    category: inferred?.category ?? (fallback?.category as any),
-    // keep extra info if your Skill type supports it; otherwise ignore
-    // author: s.author,
-    // url: s.skillUrl,
-    // githubUrl: s.githubUrl,
-  } as Skill;
+    id: String(raw.id),
+    title: typeof raw.name === "string" ? raw.name : String(raw.name ?? ""),
+    description: typeof raw.description === "string" ? raw.description : "",
+    author: typeof raw.author === "string" ? raw.author : undefined,
+    group: ctx?.group ?? raw.group ?? "Development",
+    category: ctx?.category ?? raw.category ?? "General",
+    githubStars:
+      typeof raw.githubStars === "number" ? raw.githubStars : undefined,
+  };
 }
