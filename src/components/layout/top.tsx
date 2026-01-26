@@ -4,6 +4,7 @@ import {  Download } from "lucide-react";
 import SkillSettingsMenu from "../tree/settingsDialog"
 import { darken, hashToIndex, lighten, TREE_COLORS } from "../profile/trees"
 import Link from "next/link"
+import { UserMenu } from "./userMenu"
 
 type Props = {
   treeName: string;
@@ -52,14 +53,21 @@ username
           <div className="h-8 w-8 flex items-center justify-center">
             
             
-              <Link
-              href={"/u/" + userId}
-              className="w-6 h-6 rounded-full shrink-0 "
-              style={{
-                background: `radial-gradient(120% 120% at 30% 25%, ${hi} 0%, ${base} 45%, ${lo} 100%)`,
-                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.35)",
-              }}
-            />
+          <UserMenu
+  userId={userId}
+  trigger={
+    <button
+      type="button"
+      className="w-6 h-6 rounded-full shrink-0"
+      style={{
+        background: `radial-gradient(120% 120% at 30% 25%, ${hi} 0%, ${base} 45%, ${lo} 100%)`,
+        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.35)",
+      }}
+      aria-label="Open user menu"
+    />
+  }
+/>
+       
   <SkillSettingsMenu />
 </div>
 

@@ -252,7 +252,7 @@ function SecondaryButton({
       type="button"
       onClick={onClick}
       className={[
-        "w-full rounded-2xl border border-[#E5E5EA] bg-white px-6 py-3 font-semibold",
+        "w-full flex items-center rounded-2xl border border-[#E5E5EA] bg-white px-6 py-3 font-semibold",
         UI.buttonText,
         "text-[#1C1C1E]",
         "transition-[border-color,box-shadow,transform] duration-150",
