@@ -21,27 +21,59 @@ function uniqueSlug(title: string) {
   const suffix = Math.random().toString(36).slice(2, 7);
   return `${base}-${suffix}`;
 }
+
+// ✅ Keep validators in sync with convex/schema.ts
+const edge = v.object({
+  id: v.string(),
+  from: v.string(),
+  to: v.string(),
+});
+
+const node = v.object({
+  id: v.string(),
+  kind: v.union(v.literal("user"), v.literal("hub"), v.literal("skill")),
+  title: v.string(),
+  x: v.float64(),
+  y: v.float64(),
+
+  subtitle: v.optional(v.string()),
+  description: v.optional(v.string()),
+  group: v.optional(v.string()),
+  skillId: v.optional(v.string()),
+  category: v.optional(v.string()),
+
+  author: v.optional(v.string()),
+  githubStars: v.optional(v.number()),
+});
+
 export const create = mutation({
   args: {
     title: v.string(),
     description: v.optional(v.string()),
     isPublic: v.boolean(),
-    nodes: v.any(),
-    edges: v.any(),
-    ownerId: v.id("users"),
+
+    // ✅ Strong validation: gives you pinpoint errors instead of "Server Error"
+    nodes: v.array(node),
+    edges: v.array(edge),
+
+    // If you're 100% sure this is a real Convex users _id, you can make this required again.
+    ownerId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
     const t = now();
 
-    const nodes = Array.isArray(args.nodes) ? args.nodes : [];
-    const edges = Array.isArray(args.edges) ? args.edges : [];
+    const nodes = args.nodes;
+    const edges = args.edges;
 
     const treeId = await ctx.db.insert("skillTrees", {
       title: args.title,
       description: args.description ?? "",
       isPublic: args.isPublic,
       slug: uniqueSlug(args.title),
+
+      // ✅ Only set if provided
       ownerId: args.ownerId,
+
       nodeCount: nodes.length,
       edgeCount: edges.length,
       createdAt: t,
@@ -66,8 +98,10 @@ export const saveSnapshot = mutation({
     title: v.string(),
     description: v.optional(v.string()),
     isPublic: v.boolean(),
-    nodes: v.any(),
-    edges: v.any(),
+
+    // ✅ Strong validation here too
+    nodes: v.array(node),
+    edges: v.array(edge),
   },
   handler: async (ctx, args) => {
     const t = now();
@@ -75,8 +109,8 @@ export const saveSnapshot = mutation({
     const tree = await ctx.db.get(args.treeId);
     if (!tree) throw new Error("Tree not found");
 
-    const nodes = Array.isArray(args.nodes) ? args.nodes : [];
-    const edges = Array.isArray(args.edges) ? args.edges : [];
+    const nodes = args.nodes;
+    const edges = args.edges;
 
     const latest = await ctx.db
       .query("treeSnapshots")
@@ -148,10 +182,7 @@ export const getById = query({
       .first();
 
     if (!latest) {
-      return {
-        tree,
-        snapshot: null,
-      };
+      return { tree, snapshot: null };
     }
 
     return {
@@ -165,9 +196,7 @@ export const getById = query({
 });
 
 export const getMyLatest = query({
-  args: {
-    userId: v.id("users"),
-  },
+  args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
     return await ctx.db
       .query("skillTrees")

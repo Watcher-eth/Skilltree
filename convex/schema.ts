@@ -23,6 +23,10 @@ const node = v.object({
 
   // ✅ allow missing (do NOT require string)
   category: v.optional(v.string()),
+
+  // ✅ NEW: must match what you store in nodes
+  author: v.optional(v.string()),
+  githubStars: v.optional(v.number()),
 });
 
 export default defineSchema({
@@ -40,7 +44,7 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_owner", ["ownerId"])
     .index("by_public", ["isPublic", "updatedAt"]),
-    
+
   treeSnapshots: defineTable({
     treeId: v.id("skillTrees"),
     version: v.number(),
@@ -51,33 +55,26 @@ export default defineSchema({
     edges: v.array(edge),
   }).index("by_tree_version", ["treeId", "version"]),
 
-  // if you don’t have users yet, you can delete this table,
-  // but leaving it here is fine if you reference ownerId later.
+  users: defineTable({
+    provider: v.string(),
+    providerAccountId: v.string(),
+    email: v.optional(v.string()),
+    name: v.string(),
+    avatar: v.string(),
+    createdAt: v.number(),
+    onboarded: v.boolean(),
 
-    users: defineTable({
-      provider: v.string(),
-      providerAccountId: v.string(),
-      email: v.optional(v.string()),
-      name: v.string(),
-      avatar: v.string(),
-      createdAt: v.number(),
-      onboarded: v.boolean(),
-    
-      // ✅ new: public profile url: /u/[handle]
-      handle: v.optional(v.string()),
-    })
-      .index("by_provider", ["provider", "providerAccountId"])
-      .index("by_handle", ["handle"]),
-    
-    
-    // OPTIONAL (for following tab to actually show something)
-    follows: defineTable({
-      followerId: v.id("users"),
-      followingId: v.id("users"),
-      createdAt: v.number(),
-    })
-      .index("by_follower", ["followerId", "createdAt"])
-      .index("by_pair", ["followerId", "followingId"]),
+    // ✅ new: public profile url: /u/[handle]
+    handle: v.optional(v.string()),
+  })
+    .index("by_provider", ["provider", "providerAccountId"])
+    .index("by_handle", ["handle"]),
 
+  follows: defineTable({
+    followerId: v.id("users"),
+    followingId: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_follower", ["followerId", "createdAt"])
+    .index("by_pair", ["followerId", "followingId"]),
 });
-

@@ -13,19 +13,11 @@ export default function AppRoot() {
   const router = useRouter();
   const { me, isLoading, status } = useMe();
 
-  const myTree = useQuery(
-    api.skillTrees.getMyLatest,
-    me ? { userId: me._id } : "skip"
-  );
+
 
   const [showIntro, setShowIntro] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!me) return;
-    if (myTree === undefined) return;
-    if (!myTree) return;
-    router.replace(`/edit/${myTree._id}`);
-  }, [me, myTree, router]);
+
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -34,7 +26,6 @@ export default function AppRoot() {
 
   // ✅ Only block while NextAuth is still resolving session OR while myTree is loading *after* we have me
   if (isLoading) return null;
-  if (me && myTree === undefined) return null;
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#f4f4f3]">

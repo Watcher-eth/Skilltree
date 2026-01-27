@@ -13,7 +13,7 @@ const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 const SITE_NAME = "[Skills]";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"; // set in env
 const DEFAULT_TITLE = "[Skill]s";
-const DEFAULT_DESC = "Create your own skill trees for claude, cursor, ... and share it with the world.";
+const DEFAULT_DESC = "Create your own skill tree for claude, cursor, ... and share it with the world.";
 const OG_IMAGE = `${SITE_URL}/og.png`; // put og.png in /public
 
 export default function App({ Component, pageProps }: AppProps) {

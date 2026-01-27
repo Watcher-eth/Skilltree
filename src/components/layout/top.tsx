@@ -19,7 +19,6 @@ type Props = {
   onOpenInstall: () => void;
   mode?: "edit" | "view";
 
-  // ✅ optional: make title clickable
   treeHref?: string;
 };
 
