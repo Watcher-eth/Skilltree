@@ -13,8 +13,6 @@ export default function AppRoot() {
   const router = useRouter();
   const { me, isLoading, status } = useMe();
 
-
-
   const [showIntro, setShowIntro] = React.useState(false);
 
 

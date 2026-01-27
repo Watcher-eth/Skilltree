@@ -29,26 +29,50 @@ type InitialSnapshot = {
   edges: CanvasEdge[];
 };
 
+// skillTree.tsx
+function cleanStr(v: any) {
+  return typeof v === "string" && v.trim() !== "" ? v : undefined;
+}
+function cleanNum(v: any) {
+  return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
 function sanitizeNodes(nodes: CanvasNode[]) {
   return nodes.map((n) => {
-    const out: any = { ...n };
+    const out: any = {
+      id: String(n.id),
+      kind: n.kind,
+      title: String(n.title),
+      x: Number(n.x),
+      y: Number(n.y),
+    };
 
-    if (out.category == null) delete out.category;
-    if (out.subtitle == null) delete out.subtitle;
-    if (out.description == null) delete out.description;
-    if (out.group == null) delete out.group;
-    if (out.skillId == null) delete out.skillId;
+    const subtitle = cleanStr((n as any).subtitle);
+    const description = cleanStr((n as any).description);
+    const group = cleanStr((n as any).group);
+    const skillId = cleanStr((n as any).skillId);
+    const category = cleanStr((n as any).category);
+    const author = cleanStr((n as any).author);
+    const githubStars = cleanNum((n as any).githubStars);
 
-    // ✅ NEW
-    if (out.author == null) delete out.author;
-    if (out.githubStars == null) delete out.githubStars;
+    if (subtitle !== undefined) out.subtitle = subtitle;
+    if (description !== undefined) out.description = description;
+    if (group !== undefined) out.group = group;
+    if (skillId !== undefined) out.skillId = skillId;
+    if (category !== undefined) out.category = category;
+    if (author !== undefined) out.author = author;
+    if (githubStars !== undefined) out.githubStars = githubStars;
 
     return out;
   });
 }
 
 function sanitizeEdges(edges: CanvasEdge[]) {
-  return edges.map((e) => ({ id: e.id, from: e.from, to: e.to }));
+  return edges.map((e) => ({
+    id: String(e.id),
+    from: String(e.from),
+    to: String(e.to),
+  }));
 }
 
 function edgeId(from: string, to: string) {
@@ -357,10 +381,13 @@ const AUTOSAVE_INTERVAL = 60_000; // 1 minute
       const cleanNodes = sanitizeNodes(
         JSON.parse(JSON.stringify(nodes))
       );
+
       const cleanEdges = sanitizeEdges(
         JSON.parse(JSON.stringify(edges))
       );
   
+      console.log("payload sample node", cleanNodes[0]);
+console.log("payload sample edge", cleanEdges[0]);
       if (!treeId) {
         // ─── CREATE ───────────────────────────────
         const res = await createTree({
