@@ -55,7 +55,7 @@ export function InstallSkillsDialog({
   );
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-[420px] rounded-xl border-0 bg-white   p-0 shadow-2xl">
+      <DialogContent className="  rounded-3xl border-0 bg-white   p-1 shadow-2xl">
         {/* TOP */}
         <div className="p-5 pb-3 max-w-[420px]">
           {/* Icon */}

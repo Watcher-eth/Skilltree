@@ -13,7 +13,7 @@ type Props = {
   selectedId: string | null;
   onSelectNode: (id: string | null) => void;
   onMoveNode: (id: string, world: { x: number; y: number }) => void;
-  readOnly?: boolean;
+  readOnly?: boolean; // now: disables dragging only
 };
 
 type Viewport = { x: number; y: number; z: number };
@@ -63,17 +63,16 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
     };
   }, []);
 
-  // Center on mount
   React.useEffect(() => {
     const r = rootRef.current?.getBoundingClientRect();
     if (!r) return;
     setVp({ x: r.width * 0.5, y: r.height * 0.55, z: 1 });
   }, []);
 
-  // Wheel (bind once; use refs)
+  // ✅ Wheel ALWAYS works (view + edit)
   React.useEffect(() => {
     const el = rootRef.current;
-    if (!el || readOnly) return;
+    if (!el) return;
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -99,11 +98,11 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
 
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [readOnly]);
+  }, []);
 
-  // Pan background
+  // ✅ Pan background ALWAYS works (view + edit)
   const onPointerDownBg = (e: React.PointerEvent) => {
-    if (readOnly || e.button !== 0) return;
+    if (e.button !== 0) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const v = vpRef.current;
     panRef.current = {
@@ -117,7 +116,7 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
   };
 
   const onPointerMoveBg = (e: React.PointerEvent) => {
-    if (readOnly || !panRef.current.active) return;
+    if (!panRef.current.active) return;
     setVp((p) => ({
       ...p,
       x: panRef.current.baseX + (e.clientX - panRef.current.startX),
@@ -129,7 +128,7 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
     panRef.current.active = false;
   };
 
-  // Snapping (O(N) but ok; avoid setGuide if unchanged)
+  // Snapping: only relevant when dragging (edit mode)
   const applySnapping = React.useCallback(
     (id: string, pos: { x: number; y: number }) => {
       let snapX: number | undefined;
@@ -160,6 +159,7 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
 
   const onMoveNodeClient = React.useCallback(
     (id: string, client: { x: number; y: number }) => {
+      // ✅ readOnly disables moving only
       if (readOnly) return;
 
       const w = screenToWorld(client.x, client.y);
@@ -180,15 +180,12 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
 
   const onMoveEnd = React.useCallback(() => setGuide(null), []);
 
+  // ✅ selection ALWAYS works (view + edit)
   const onSelectNodeId = React.useCallback(
-    (id: string) => {
-      if (readOnly) return;
-      onSelectNode(id);
-    },
-    [onSelectNode, readOnly]
+    (id: string) => onSelectNode(id),
+    [onSelectNode]
   );
 
-  // Fly-to API unchanged (but use vpRef inside)
   React.useImperativeHandle(
     ref,
     () => ({
@@ -267,13 +264,14 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
         }}
       />
 
-      {guide?.x !== undefined && (
+      {/* ✅ only show guides when dragging (edit mode) */}
+      {!readOnly && guide?.x !== undefined && (
         <div
           className="absolute inset-y-0 w-px bg-blue-400/40 pointer-events-none"
           style={{ left: vp.x + guide.x * vp.z }}
         />
       )}
-      {guide?.y !== undefined && (
+      {!readOnly && guide?.y !== undefined && (
         <div
           className="absolute inset-x-0 h-px bg-blue-400/40 pointer-events-none"
           style={{ top: vp.y + guide.y * vp.z }}
@@ -300,9 +298,9 @@ export const Canvas = React.forwardRef<CanvasHandle, Props>(function Canvas(
               key={n.id}
               node={n}
               selected={selectedId === n.id}
-              readOnly={readOnly}
-              onSelectNode={onSelectNodeId}
-              onMoveNode={onMoveNodeClient}
+              readOnly={readOnly}              // SkillNode should use this to disable dragging only
+              onSelectNode={onSelectNodeId}    // selection still works
+              onMoveNode={onMoveNodeClient}    // no-op when readOnly
               onMoveEnd={onMoveEnd}
             />
           ))}

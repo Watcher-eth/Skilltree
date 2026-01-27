@@ -161,18 +161,25 @@ export function LeftMenu({ onAddSkill }: Props) {
         const normalized =
         json.data?.skills?.map((raw) => {
           const s = toAppSkill(raw as any, { group: openGroup!, category: openCat! });
-          console.log("category fetch", s);
-console.log("category fetch", normalized);
+      
+          // ✅ ok to log s here
+          console.log("category fetch item", s);
+      
           return {
             ...s,
-            // harden the fields you render
-            title: typeof (s as any).title === "string" ? (s as any).title : String((s as any).title ?? (raw as any).name ?? ""),
+            title:
+              typeof (s as any).title === "string"
+                ? (s as any).title
+                : String((s as any).title ?? (raw as any).name ?? ""),
             description:
               typeof (s as any).description === "string"
                 ? (s as any).description
                 : String((s as any).description ?? ""),
           } as Skill;
         }) ?? [];
+      
+      // ✅ log AFTER normalized exists
+      console.log("category fetch normalized", normalized);
         if (!cancelled) setCatSkills(normalized);
       } catch (e: any) {
         if (!cancelled) setCatError(e.message);

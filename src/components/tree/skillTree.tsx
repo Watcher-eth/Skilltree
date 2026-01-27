@@ -224,6 +224,7 @@ export function SkillTreeBuilder({
   const [edges, setEdges] = React.useState<CanvasEdge[]>(
     () => initialSnapshot?.edges ?? []
   );
+
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [codeOpen, setCodeOpen] = React.useState(false);
   const [installOpen, setInstallOpen] = React.useState(false);
@@ -635,6 +636,6 @@ import { useRouter } from "next/router"
 import { useMe } from "../hooks/useMe"
 import { InstallSkillsDialog } from "../layout/installDialog"
 import { SkillTreeSidebar } from "../layout/sidebar"
-function RightInspectorNode({ node }: { node: CanvasNode }) {
+export function RightInspectorNode({ node }: { node: CanvasNode }) {
   return <RightInspector node={node} />;
 }
