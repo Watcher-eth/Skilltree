@@ -118,8 +118,19 @@ function SkillNodeImpl({ node, selected, readOnly, onSelectNode, onMoveNode, onM
   };
 
   const bg = pickBg(node);
-  const dark = isDark(bg);
   const Icon = iconForNode(node);
+
+  // ✅ Always light (white) unless bg is white
+  const isWhiteBg = bg.trim().toUpperCase() === "#FFFFFF";
+
+  const fg = isWhiteBg ? "text-black" : "text-white";
+  const sub = isWhiteBg ? "text-black/55" : "text-white/70";
+  const menuBg = isWhiteBg ? "bg-black/10" : "bg-white/12";
+  const menuFg = isWhiteBg ? "text-black/65" : "text-white/80";
+  const iconFg = isWhiteBg ? "text-black/80" : "text-white";
+
+  const needsBorder = isWhiteBg;
+  const baseShadow = "shadow-[0_18px_40px_rgba(0,0,0,0.10)]";
 
   const subtitle =
     node.kind === "user"
@@ -128,13 +139,6 @@ function SkillNodeImpl({ node, selected, readOnly, onSelectNode, onMoveNode, onM
       ? "Category hub"
       : clampText(node.subtitle, "Skill");
 
-  const fg = dark ? "text-white" : "text-black";
-  const sub = dark ? "text-white/70" : "text-black/55";
-  const menuBg = dark ? "bg-white/12" : "bg-black/10";
-  const menuFg = dark ? "text-white/80" : "text-black/65";
-  const iconFg = dark ? "text-white" : "text-black/80";
-  const needsBorder = bg.toUpperCase() === "#FFFFFF";
-  const baseShadow = "shadow-[0_18px_40px_rgba(0,0,0,0.10)]";
 
   return (
     <motion.div

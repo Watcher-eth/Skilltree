@@ -3,7 +3,6 @@
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { LeftMenu } from "../tree/menu"

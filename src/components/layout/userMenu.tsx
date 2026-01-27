@@ -105,7 +105,7 @@ export function UserMenu({
 
   return (
     <DropdownMenu  open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild className="hover:scale-104 active:scale-98 transition-all">{trigger}</DropdownMenuTrigger>
 
       <DropdownMenuContent
         align="center"

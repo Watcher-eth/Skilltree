@@ -134,8 +134,24 @@ export function LeftMenu({ onAddSkill }: Props) {
   const [searchLoading, setSearchLoading] = React.useState(false);
   const [searchError, setSearchError] = React.useState<string | null>(null);
 
-  /* ───────── CATEGORY FETCH ───────── */
+  // ✅ one place to exit search mode
+  const stopSearch = React.useCallback(() => {
+    setQ("");
+    setSearchResults([]);
+    setSearchLoading(false);
+    setSearchError(null);
+  }, []);
 
+  // ✅ if user deletes query manually, also clear any stale UI state
+  React.useEffect(() => {
+    if (!dq) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      setSearchError(null);
+    }
+  }, [dq]);
+
+  /* ───────── CATEGORY FETCH ───────── */
   React.useEffect(() => {
     if (!openGroup || !openCat) return;
 
@@ -159,27 +175,25 @@ export function LeftMenu({ onAddSkill }: Props) {
           throw new Error(json.error ?? "Failed");
 
         const normalized =
-        json.data?.skills?.map((raw) => {
-          const s = toAppSkill(raw as any, { group: openGroup!, category: openCat! });
-      
-          // ✅ ok to log s here
-          console.log("category fetch item", s);
-      
-          return {
-            ...s,
-            title:
-              typeof (s as any).title === "string"
-                ? (s as any).title
-                : String((s as any).title ?? (raw as any).name ?? ""),
-            description:
-              typeof (s as any).description === "string"
-                ? (s as any).description
-                : String((s as any).description ?? ""),
-          } as Skill;
-        }) ?? [];
-      
-      // ✅ log AFTER normalized exists
-      console.log("category fetch normalized", normalized);
+          json.data?.skills?.map((raw) => {
+            const s = toAppSkill(raw as any, {
+              group: openGroup!,
+              category: openCat!,
+            });
+
+            return {
+              ...s,
+              title:
+                typeof (s as any).title === "string"
+                  ? (s as any).title
+                  : String((s as any).title ?? (raw as any).name ?? ""),
+              description:
+                typeof (s as any).description === "string"
+                  ? (s as any).description
+                  : String((s as any).description ?? ""),
+            } as Skill;
+          }) ?? [];
+
         if (!cancelled) setCatSkills(normalized);
       } catch (e: any) {
         if (!cancelled) setCatError(e.message);
@@ -196,12 +210,8 @@ export function LeftMenu({ onAddSkill }: Props) {
   }, [openGroup, openCat]);
 
   /* ───────── SEARCH ───────── */
-
   React.useEffect(() => {
-    if (!dq) {
-      setSearchResults([]);
-      return;
-    }
+    if (!dq) return;
 
     let cancelled = false;
     const controller = new AbortController();
@@ -221,21 +231,26 @@ export function LeftMenu({ onAddSkill }: Props) {
           throw new Error(json.error ?? "Search failed");
 
         const normalized =
-        json.data?.skills?.map((raw) => {
-          const s = toAppSkill(
-            raw as any,
-            openGroup && openCat ? { group: openGroup, category: openCat } : undefined
-          );
-      
-          return {
-            ...s,
-            title: typeof (s as any).title === "string" ? (s as any).title : String((s as any).title ?? (raw as any).name ?? ""),
-            description:
-              typeof (s as any).description === "string"
-                ? (s as any).description
-                : String((s as any).description ?? ""),
-          } as Skill;
-        }) ?? [];
+          json.data?.skills?.map((raw) => {
+            const s = toAppSkill(
+              raw as any,
+              openGroup && openCat
+                ? { group: openGroup, category: openCat }
+                : undefined
+            );
+
+            return {
+              ...s,
+              title:
+                typeof (s as any).title === "string"
+                  ? (s as any).title
+                  : String((s as any).title ?? (raw as any).name ?? ""),
+              description:
+                typeof (s as any).description === "string"
+                  ? (s as any).description
+                  : String((s as any).description ?? ""),
+            } as Skill;
+          }) ?? [];
 
         if (!cancelled) setSearchResults(normalized);
       } catch (e: any) {
@@ -252,12 +267,11 @@ export function LeftMenu({ onAddSkill }: Props) {
     };
   }, [dq, openGroup, openCat]);
 
-  /* ───────────────── RENDER ───────────────── */
   return (
     <TooltipProvider delayDuration={120}>
       <div className="h-full flex">
         {/* ICON RAIL */}
-        <div className="p-2 bg-white/90 backdrop-blur-md  border-r border-gray-100  flex flex-col items-center py-3 gap-2">
+        <div className="p-2 bg-white/90 backdrop-blur-md border-r border-gray-100 flex flex-col items-center py-3 gap-2">
           {GROUPS.map((group) => {
             const active = openGroup === group;
             return (
@@ -265,14 +279,16 @@ export function LeftMenu({ onAddSkill }: Props) {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => {
+                      // ✅ (3) clicking left rail exits search
+                      stopSearch();
                       setOpenGroup(group);
                       setOpenCat(null);
                     }}
                     className={cn(
-                      "h-10 w-10  flex items-center justify-center transition",
+                      "h-10 w-10 flex items-center justify-center transition",
                       active
                         ? "bg-[#00a6fb]/10 rounded-xl backdrop-blur-md text-[#00a6fb]"
-                        : "rounded-xl "
+                        : "rounded-xl"
                     )}
                   >
                     <GroupIcon group={group} />
@@ -294,7 +310,7 @@ export function LeftMenu({ onAddSkill }: Props) {
               <Search className="h-4 w-4 text-black/40" />
               <input
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) => setQ(e.target.value)} // ✅ (2) deleting query handled by effect
                 placeholder="Search skills…"
                 className="w-full bg-transparent text-[13px] outline-none placeholder:text-black/35"
               />
@@ -321,12 +337,14 @@ export function LeftMenu({ onAddSkill }: Props) {
                     <Tooltip key={s.id}>
                       <TooltipTrigger asChild>
                         <button
-                          onClick={() => onAddSkill(s)}
+                          onClick={() => {
+                            // ✅ (1) selecting from search exits search
+                            onAddSkill(s);
+                            stopSearch();
+                          }}
                           className="w-full flex items-center justify-between px-2 py-2 rounded hover:bg-black/[0.06]"
                         >
-                          <span className="text-[13px] truncate">
-                            {s.title}
-                          </span>
+                          <span className="text-[13px] truncate">{s.title}</span>
                           <Plus className="h-4 w-4 text-black/40" />
                         </button>
                       </TooltipTrigger>
@@ -337,14 +355,12 @@ export function LeftMenu({ onAddSkill }: Props) {
                   ))}
               </div>
             ) : (
-<AnimatePresence mode="wait">
-{openGroup &&
+              <AnimatePresence mode="wait">
+                {openGroup &&
                   CATEGORY_TREE[openGroup]?.map((cat) => {
                     const isOpen = openCat === cat;
                     return (
                       <div key={cat} className="relative mb-2">
-                       
-
                         <button
                           onClick={() =>
                             setOpenCat(isOpen ? null : (cat as SkillCategory))
@@ -387,7 +403,10 @@ export function LeftMenu({ onAddSkill }: Props) {
                                       <Plus className="h-4 w-4 text-black/40" />
                                     </button>
                                   </TooltipTrigger>
-                                  <TooltipContent side="right" className="max-w-xs">
+                                  <TooltipContent
+                                    side="right"
+                                    className="max-w-xs"
+                                  >
                                     {s.description}
                                   </TooltipContent>
                                 </Tooltip>

@@ -79,7 +79,7 @@ export default function SkillSettingsMenu() {
       <DropdownMenuTrigger asChild>
         <button
           aria-label="Skill settings"
-          className="h-8 w-8  ml-3  mr-5 rounded-full flex items-center justify-center hover:bg-white"
+          className="h-8 w-8 hover:scale-104 active:scale-98 transition-all ml-3  mr-5 rounded-full flex items-center justify-center hover:bg-white"
         >
           <Settings className="h-5 w-5 text-black/60" />
         </button>

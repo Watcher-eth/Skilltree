@@ -89,7 +89,7 @@ export function TopBar({
 
           <button
             onClick={onOpenInstall}
-            className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-white"
+            className="h-8 w-8 hover:scale-104 active:scale-98 transition-all rounded-full flex items-center justify-center hover:bg-white"
           >
             <Download className="h-5 w-5 text-black/60" />
           </button>
@@ -98,14 +98,14 @@ export function TopBar({
             <button
               onClick={onSave}
               disabled={saving}
-              className="ml-2 h-8 px-4 rounded-full bg-black text-white text-[13px] font-semibold shadow-sm hover:opacity-95 disabled:opacity-60"
+              className="ml-2 h-8 px-4 hover:scale-104 active:scale-98 transition-all rounded-full bg-black text-white text-[13px] font-semibold shadow-sm hover:opacity-95 disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save"}
             </button>
           ) : (
             <button
               onClick={onFork}
-              className="ml-2 h-8 px-4 rounded-full bg-black text-white text-[13px] font-semibold shadow-sm hover:opacity-95 flex items-center gap-2"
+              className="ml-2 h-8 px-4 hover:scale-104 active:scale-98 transition-all rounded-full bg-black text-white text-[13px] font-semibold shadow-sm hover:opacity-95 flex items-center gap-2"
             >
               <GitFork className="h-4 w-4" />
               Fork

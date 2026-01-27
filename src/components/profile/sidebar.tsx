@@ -65,7 +65,7 @@ export function Sidebar({ showBanner, user, tab, onCloseBanner }: SidebarProps) 
               key={item.label}
               onClick={onClick}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
+                "w-full flex items-center gap-3 px-3 py-2.5 my-1 rounded-lg text-sm transition-colors",
                 isActive
                   ? "bg-secondary/80 text-foreground font-medium"
                   : "text-muted-foreground hover:bg-secondary/50",

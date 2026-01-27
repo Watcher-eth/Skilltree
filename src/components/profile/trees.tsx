@@ -35,7 +35,7 @@ export function TreesContent({
               <p className="text-sm text-muted-foreground mb-4">
                 Search with natural language
               </p>
-              <Button className="bg-[#00a6fb] hover:bg-[#0096fb] text-white rounded-lg px-5 py-2 h-auto font-medium">
+              <Button className="bg-[#00a6fb]/10 border border-[#00a6fb]/30 font-semibold text-[#00a6fb] rounded-lg px-5 py-2 h-auto font-medium hover:bg-[#00a6fb]/20 hover:text-white">
                 <Link href="https://skillsmp.com">SkillsMP</Link>
               </Button>
             </div>
@@ -55,10 +55,10 @@ export function TreesContent({
             </div>
 
             <Button
-              className="h-9 rounded-xl px-4 bg-[#00a6fb] hover:bg-[#0096fb] text-white"
+              className="h-7 rounded-xl text-xs font-semibold px-2 border border-[#00a6fb]/20 bg-[#00a6fb]/10 hover:bg-[#00a6fb] text-[#00a6fb]"
               asChild
             >
-              <Link href="/">New Tree</Link>
+              <Link href="/">Public</Link>
             </Button>
           </div>
 
@@ -113,11 +113,11 @@ export function TreesContent({
           {/* CTA row like reference */}
           <Button
             variant="outline"
-            className="w-full border-none mt-1.5 outline-none max-w-md h-12 rounded-xl bg-gray-100 text-foreground font-medium hover:bg-secondary/50"
+            className="w-full border-none px-1 mt-1.5 outline-none max-w-md h-10 rounded-full bg-gray-100 text-foreground font-semibold hover:text-[#00a6fb] hover:bg-[#00a6fb]/10"
             asChild
           >
             <Link href="/">
-              <Plus className="w-5 h-5 mr-0" />
+              <Plus className="w-5 h-5 -mr-0.5" />
               New Tree
             </Link>
           </Button>
