@@ -51,40 +51,32 @@ export const create = mutation({
     title: v.string(),
     description: v.optional(v.string()),
     isPublic: v.boolean(),
-
-    // ✅ Strong validation: gives you pinpoint errors instead of "Server Error"
     nodes: v.array(node),
     edges: v.array(edge),
-
-    // If you're 100% sure this is a real Convex users _id, you can make this required again.
     ownerId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
     const t = now();
-
-    const nodes = args.nodes;
-    const edges = args.edges;
 
     const treeId = await ctx.db.insert("skillTrees", {
       title: args.title,
       description: args.description ?? "",
       isPublic: args.isPublic,
       slug: uniqueSlug(args.title),
-
-      // ✅ Only set if provided
-      ownerId: args.ownerId,
-
-      nodeCount: nodes.length,
-      edgeCount: edges.length,
+      nodeCount: args.nodes.length,
+      edgeCount: args.edges.length,
       createdAt: t,
       updatedAt: t,
+
+      // ✅ IMPORTANT: omit the field entirely if not set
+      ...(args.ownerId ? { ownerId: args.ownerId } : {}),
     });
 
     await ctx.db.insert("treeSnapshots", {
       treeId,
       version: 1,
-      nodes,
-      edges,
+      nodes: args.nodes,
+      edges: args.edges,
       createdAt: t,
     });
 
@@ -98,8 +90,6 @@ export const saveSnapshot = mutation({
     title: v.string(),
     description: v.optional(v.string()),
     isPublic: v.boolean(),
-
-    // ✅ Strong validation here too
     nodes: v.array(node),
     edges: v.array(edge),
   },
@@ -108,9 +98,6 @@ export const saveSnapshot = mutation({
 
     const tree = await ctx.db.get(args.treeId);
     if (!tree) throw new Error("Tree not found");
-
-    const nodes = args.nodes;
-    const edges = args.edges;
 
     const latest = await ctx.db
       .query("treeSnapshots")
@@ -124,16 +111,16 @@ export const saveSnapshot = mutation({
       title: args.title,
       description: args.description ?? "",
       isPublic: args.isPublic,
-      nodeCount: nodes.length,
-      edgeCount: edges.length,
+      nodeCount: args.nodes.length,
+      edgeCount: args.edges.length,
       updatedAt: t,
     });
 
     await ctx.db.insert("treeSnapshots", {
       treeId: args.treeId,
       version: nextVersion,
-      nodes,
-      edges,
+      nodes: args.nodes,
+      edges: args.edges,
       createdAt: t,
     });
 
@@ -157,14 +144,11 @@ export const getBySlug = query({
       .order("desc")
       .first();
 
-    if (!latest) return { tree, snapshot: null };
-
     return {
       tree,
-      snapshot: {
-        nodes: latest.nodes,
-        edges: latest.edges,
-      },
+      snapshot: latest
+        ? { nodes: latest.nodes, edges: latest.edges }
+        : null,
     };
   },
 });
@@ -181,16 +165,11 @@ export const getById = query({
       .order("desc")
       .first();
 
-    if (!latest) {
-      return { tree, snapshot: null };
-    }
-
     return {
       tree,
-      snapshot: {
-        nodes: latest.nodes,
-        edges: latest.edges,
-      },
+      snapshot: latest
+        ? { nodes: latest.nodes, edges: latest.edges }
+        : null,
     };
   },
 });
